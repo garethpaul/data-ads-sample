@@ -45,3 +45,6 @@ environment variables or local config and use only publishable sample data.
 - Broad SDK wrappers before a minimal sample exists
 - Data ingestion code without setup and privacy notes
 - Generated project scaffolding with no runnable example
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.

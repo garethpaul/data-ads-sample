@@ -1,5 +1,8 @@
 ## Data Ads Sample Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Data Ads Sample is currently a documentation-only public repository reserved
 for a simple Ads API plus GNIP sample.
 

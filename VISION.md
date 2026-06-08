@@ -39,7 +39,7 @@ Advertising and social data APIs can expose tokens, account identifiers,
 campaign data, and user-derived data. Future code must keep credentials in
 environment variables or local config and use only publishable sample data.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Committed API credentials, tokens, exports, or private datasets
 - Broad SDK wrappers before a minimal sample exists

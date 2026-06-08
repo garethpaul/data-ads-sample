@@ -3,9 +3,9 @@
 Data Ads Sample is currently an empty public repository reserved for a simple
 Ads API plus GNIP sample.
 
-The only authoritative project context today is the GitHub description:
-"Simple Data Ads Sample for Ads API + GNIP." There is no checked-in
-implementation or README yet.
+The authoritative project context today is the GitHub description:
+"Simple Data Ads Sample for Ads API + GNIP." No runnable implementation is
+checked in yet.
 
 The goal is to keep the repository ready for a focused, credential-safe API
 sample rather than accumulate unverified scaffolding.
@@ -21,7 +21,7 @@ Priority:
 
 Next priorities:
 
-- Add a README before or alongside the first implementation
+- Keep README, setup notes, and verification commands aligned with the current repository state
 - Define the sample language, runtime, and supported API flow
 - Add a minimal local verification command
 - Include fixture data that is safe to publish

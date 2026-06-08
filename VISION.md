@@ -39,7 +39,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Advertising and social data APIs can expose tokens, account identifiers,
 campaign data, and user-derived data. Future code must keep credentials in
 environment variables or local config and use only publishable sample data.

@@ -41,6 +41,17 @@ if [ -n "$tracked_sensitive" ]; then
   exit 1
 fi
 
+secret_content=$(rg -n --hidden \
+  --glob '!**/.git/**' \
+  --glob '!docs/plans/**' \
+  --glob '!scripts/check-baseline.sh' \
+  'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}' \
+  "$ROOT_DIR" || true)
+if [ -n "$secret_content" ]; then
+  printf '%s\n%s\n' "Potential secret material detected:" "$secret_content" >&2
+  exit 1
+fi
+
 runtime_manifests=$(git -C "$ROOT_DIR" ls-files | grep -E '(^|/)(package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)$' || true)
 if [ -n "$runtime_manifests" ]; then
   printf '%s\n%s\n' "Runtime manifests were added; update README, plan, and this guard for the real sample:" "$runtime_manifests" >&2
@@ -54,6 +65,11 @@ fi
 
 if ! grep -Fq "credentials out of git" "$VISION"; then
   printf '%s\n' "VISION.md must keep future credentials out of git." >&2
+  exit 1
+fi
+
+if ! grep -Fq "documentation-only" "$VISION"; then
+  printf '%s\n' "VISION.md must describe the current documentation-only repository state." >&2
   exit 1
 fi
 

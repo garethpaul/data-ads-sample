@@ -1,7 +1,7 @@
 ## Data Ads Sample Vision
 
-Data Ads Sample is currently an empty public repository reserved for a simple
-Ads API plus GNIP sample.
+Data Ads Sample is currently a documentation-only public repository reserved
+for a simple Ads API plus GNIP sample.
 
 The authoritative project context today is the GitHub description:
 "Simple Data Ads Sample for Ads API + GNIP." No runnable implementation is

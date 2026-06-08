@@ -9,7 +9,7 @@ date: 2026-06-08
 
 ## Summary
 
-Prepare the empty Ads API + GNIP sample repository for future implementation by
+Prepare the documentation-only Ads API + GNIP sample repository for future implementation by
 adding credential-safe ignore rules, a repeatable source guard, and maintenance
 notes that make the current no-runtime state explicit.
 
@@ -27,7 +27,7 @@ verification contract.
 - R1. Local credentials, private exports, generated logs, and common caches must
   be ignored.
 - R2. No credential-like or private data files should be tracked in the current
-  empty baseline.
+  documentation-only baseline.
 - R3. Adding a runtime manifest must fail the baseline until the README, plan,
   and guard are updated for the real sample.
 - R4. README, changelog, and plan docs must document how to verify the current

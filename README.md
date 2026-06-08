@@ -58,9 +58,10 @@ Run the repository readiness guard before committing changes:
 scripts/check-baseline.sh
 ```
 
-The current guard verifies that this still-empty sample has no runtime manifest
-yet, ignores likely local credential and private-export paths, and documents the
-required follow-up when the first real implementation is added.
+The current guard verifies that this documentation-only sample has no runtime
+manifest yet, ignores likely local credential and private-export paths, scans
+for obvious token material, and documents the required follow-up when the first
+real implementation is added.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

@@ -1,0 +1,21 @@
+.DS_Store
+*.log
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+
+# Private or generated data exports
+data/private/
+data/exports/
+*.sqlite
+*.db
+
+# Common generated dependency/cache directories for future samples
+node_modules/
+__pycache__/
+*.pyc

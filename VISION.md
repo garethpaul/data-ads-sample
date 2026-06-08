@@ -33,6 +33,8 @@ Contribution rules:
 
 - One PR = one focused setup, API flow, or documentation topic.
 - Do not add generated credentials, tokens, or private customer data.
+- Keep private raw exports and caches out of git unless they are replaced with
+  explicit safe fixtures.
 - Keep the first implementation small enough to review in one pass.
 - Document external account requirements explicitly.
 

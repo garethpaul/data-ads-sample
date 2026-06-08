@@ -70,6 +70,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - No required secret or credential file was identified in the repository scan.
 - Future Ads API or GNIP credentials must stay in environment variables or local
   untracked configuration such as `.env`, which is ignored by this repository.
+- Keep private, raw, cached, and exported Ads/GNIP data under ignored local
+  directories until the project defines safe publishable fixtures.
 
 ## Security and Privacy Notes
 
@@ -83,6 +85,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.
+- If fixture data is added, keep it small, synthetic or publishable, and update
+  the guard to distinguish safe fixtures from private exports.
 
 ## Contributing
 

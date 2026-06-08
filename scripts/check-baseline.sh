@@ -6,6 +6,7 @@ README="$ROOT_DIR/README.md"
 VISION="$ROOT_DIR/VISION.md"
 SECURITY="$ROOT_DIR/SECURITY.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-repository-readiness-baseline.md"
+DATA_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-data-export-guard.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 
 require_file() {
@@ -24,18 +25,19 @@ for path in \
   "VISION.md" \
   "docs/readme-overview.svg" \
   "docs/plans/2026-06-08-repository-readiness-baseline.md" \
+  "docs/plans/2026-06-08-data-export-guard.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
 
-for ignored in ".env" ".env.*" "!.env.example" "*.local" "*.pem" "*.key" "data/private/" "data/exports/" "*.sqlite" "*.db"; do
+for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key" "secrets/" "data/private/" "data/raw/" "data/cache/" "data/exports/" "*.sqlite" "*.db"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
     printf '%s\n' ".gitignore must include $ignored" >&2
     exit 1
   fi
 done
 
-tracked_sensitive=$(git -C "$ROOT_DIR" ls-files | grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|data/(private|exports)/|.*\.(sqlite|db)$)' || true)
+tracked_sensitive=$(git -C "$ROOT_DIR" ls-files | grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2
   exit 1
@@ -52,6 +54,17 @@ if [ -n "$secret_content" ]; then
   exit 1
 fi
 
+api_secret_content=$(rg -n --hidden -i \
+  --glob '!**/.git/**' \
+  --glob '!docs/plans/**' \
+  --glob '!scripts/check-baseline.sh' \
+  'bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(twitter|gnip|ads)[A-Za-z0-9_ -]{0,32}(secret|token|key)[A-Za-z0-9_ -]{0,16}[:=][[:space:]]*[A-Za-z0-9_./+=-]{20,}' \
+  "$ROOT_DIR" || true)
+if [ -n "$api_secret_content" ]; then
+  printf '%s\n%s\n' "Potential Ads API, GNIP, or bearer token material detected:" "$api_secret_content" >&2
+  exit 1
+fi
+
 runtime_manifests=$(git -C "$ROOT_DIR" ls-files | grep -E '(^|/)(package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)$' || true)
 if [ -n "$runtime_manifests" ]; then
   printf '%s\n%s\n' "Runtime manifests were added; update README, plan, and this guard for the real sample:" "$runtime_manifests" >&2
@@ -60,6 +73,11 @@ fi
 
 if ! grep -Fq "scripts/check-baseline.sh" "$README"; then
   printf '%s\n' "README must document the baseline guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private, raw, cached, and exported Ads/GNIP data" "$README"; then
+  printf '%s\n' "README must document private data export handling." >&2
   exit 1
 fi
 
@@ -85,6 +103,11 @@ fi
 
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$DATA_GUARD_PLAN"; then
+  printf '%s\n' "Data guard plan must be marked completed." >&2
   exit 1
 fi
 

@@ -4,13 +4,17 @@
 # Local credentials and environment overrides
 .env
 .env.*
+.envrc
 !.env.example
 *.local
 *.pem
 *.key
+secrets/
 
 # Private or generated data exports
 data/private/
+data/raw/
+data/cache/
 data/exports/
 *.sqlite
 *.db

@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added root `make lint`, `make test`, `make build`, and `make check` gates
+  around the documentation-only readiness baseline.
 - Added a reusable fixture provenance template for future Ads API/GNIP sample
   data reviews.
 - Added a fixture provenance checklist requirement for future Ads API/GNIP

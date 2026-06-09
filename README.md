@@ -57,6 +57,9 @@ safe sample data when implementation begins.
 Run the repository readiness guard before committing changes:
 
 ```bash
+make lint
+make test
+make build
 make check
 scripts/check-baseline.sh
 ```
@@ -64,7 +67,8 @@ scripts/check-baseline.sh
 The current guard verifies that this documentation-only sample has no runtime
 manifest yet, ignores likely local credential and private-export paths, scans
 for obvious token material, and documents the required follow-up when the first
-real implementation is added.
+real implementation is added. `make test` and `make build` intentionally keep
+the same readiness guard until runnable Ads API/GNIP code exists.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -90,6 +94,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for maintenance history.
+- Root `make lint`, `make test`, `make build`, and `make check` all preserve
+  the documentation-only readiness baseline until implementation begins.
+- See `docs/plans/2026-06-09-readiness-make-gates.md` for the root gate
+  baseline.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

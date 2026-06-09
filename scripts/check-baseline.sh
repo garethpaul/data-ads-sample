@@ -7,6 +7,7 @@ VISION="$ROOT_DIR/VISION.md"
 SECURITY="$ROOT_DIR/SECURITY.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-repository-readiness-baseline.md"
 DATA_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-data-export-guard.md"
+MAKE_GATE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readiness-make-gates.md"
 FIXTURE_POLICY="$ROOT_DIR/docs/data-fixture-policy.md"
 FIXTURE_TEMPLATE="$ROOT_DIR/docs/fixture-provenance-template.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
@@ -34,6 +35,7 @@ for path in \
   "docs/plans/2026-06-09-safe-fixture-policy.md" \
   "docs/plans/2026-06-09-fixture-provenance-checklist.md" \
   "docs/plans/2026-06-09-fixture-provenance-template.md" \
+  "docs/plans/2026-06-09-readiness-make-gates.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -89,8 +91,33 @@ if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
   exit 1
 fi
 
+if ! grep -Fq "lint:" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must expose a lint gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "test:" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must expose a test gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "build:" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must expose a build gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "verify: lint test build" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must expose a combined verify gate." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$README"; then
   printf '%s\n' "README must document the make check wrapper." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make lint" "$README" || ! grep -Fq "make test" "$README" || ! grep -Fq "make build" "$README"; then
+  printf '%s\n' "README must document the root lint, test, and build gates." >&2
   exit 1
 fi
 
@@ -247,6 +274,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-template.md"; then
   printf '%s\n' "Fixture provenance template plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$MAKE_GATE_PLAN"; then
+  printf '%s\n' "Readiness make gate plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$MAKE_GATE_PLAN"; then
+  printf '%s\n' "Readiness make gate plan must record make check verification." >&2
   exit 1
 fi
 

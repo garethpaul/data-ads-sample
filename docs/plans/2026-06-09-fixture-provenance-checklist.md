@@ -18,8 +18,9 @@ include provenance details before it can be committed.
 - R2. Fixture policy must require license or permission notes.
 - R3. Fixture policy must require a PII review before public commit.
 - R4. Fixture policy must require a size rationale for any committed fixture.
-- R5. README, SECURITY, CHANGES, and the readiness guard must mention the
-  fixture provenance checklist.
+- R5. README, SECURITY, VISION, CHANGES, and the readiness guard must mention
+  the fixture provenance checklist.
+- R6. No runnable implementation or runtime manifest is added in this pass.
 
 ## Verification
 

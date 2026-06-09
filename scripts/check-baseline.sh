@@ -25,8 +25,10 @@ for path in \
   "SECURITY.md" \
   "VISION.md" \
   "docs/readme-overview.svg" \
+  "docs/data-fixture-policy.md" \
   "docs/plans/2026-06-08-repository-readiness-baseline.md" \
   "docs/plans/2026-06-08-data-export-guard.md" \
+  "docs/plans/2026-06-09-safe-fixture-policy.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -92,6 +94,26 @@ if ! grep -Fq "private, raw, cached, and exported Ads/GNIP data" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/data-fixture-policy.md" "$README"; then
+  printf '%s\n' "README must point future fixture work to the fixture policy." >&2
+  exit 1
+fi
+
+if ! grep -Fq "## Allowed Fixtures" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+  printf '%s\n' "Fixture policy must define allowed fixture criteria." >&2
+  exit 1
+fi
+
+if ! grep -Fq "## Disallowed Data" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+  printf '%s\n' "Fixture policy must define disallowed data." >&2
+  exit 1
+fi
+
+if ! grep -Fq "synthetic" "$ROOT_DIR/docs/data-fixture-policy.md" || ! grep -Fq "publishable" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+  printf '%s\n' "Fixture policy must require synthetic or publishable data." >&2
+  exit 1
+fi
+
 if ! grep -Fq "credentials out of git" "$VISION"; then
   printf '%s\n' "VISION.md must keep future credentials out of git." >&2
   exit 1
@@ -119,6 +141,16 @@ fi
 
 if ! grep -Fq "status: completed" "$DATA_GUARD_PLAN"; then
   printf '%s\n' "Data guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-safe-fixture-policy.md"; then
+  printf '%s\n' "Safe fixture policy plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-safe-fixture-policy.md"; then
+  printf '%s\n' "Safe fixture policy plan must record make check verification." >&2
   exit 1
 fi
 

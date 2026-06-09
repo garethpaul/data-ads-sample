@@ -35,6 +35,7 @@ Contribution rules:
 - Do not add generated credentials, tokens, or private customer data.
 - Keep private raw exports and caches out of git unless they are replaced with
   explicit safe fixtures.
+- Require safe fixture provenance before committing sample Ads/GNIP data.
 - Keep the first implementation small enough to review in one pass.
 - Document external account requirements explicitly.
 

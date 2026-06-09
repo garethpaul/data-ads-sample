@@ -73,6 +73,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   untracked configuration such as `.env`, which is ignored by this repository.
 - Keep private, raw, cached, and exported Ads/GNIP data under ignored local
   directories until the project defines safe publishable fixtures.
+- Future fixture data must follow `docs/data-fixture-policy.md` before it is
+  committed.
 
 ## Security and Privacy Notes
 
@@ -88,6 +90,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   install and verification commands in the same change.
 - If fixture data is added, keep it small, synthetic or publishable, and update
   the guard to distinguish safe fixtures from private exports.
+- Use `docs/data-fixture-policy.md` to decide whether a future Ads/GNIP sample
+  fixture is safe to publish.
 
 ## Contributing
 

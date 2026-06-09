@@ -22,6 +22,7 @@ Priority:
 - Keep readiness tool prerequisites explicit before the source guard runs
 - Keep any future Ads API and GNIP credentials out of git
 - Keep the credential placeholder contract explicit before code exists
+- Keep account context placeholders empty until runnable code defines them
 - Document setup, required accounts, and sample data as soon as code exists
 - Prefer a small runnable example over a broad client wrapper
 

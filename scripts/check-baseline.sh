@@ -12,6 +12,7 @@ FIXTURE_POLICY="$ROOT_DIR/docs/data-fixture-policy.md"
 FIXTURE_TEMPLATE="$ROOT_DIR/docs/fixture-provenance-template.md"
 CREDENTIAL_POLICY="$ROOT_DIR/docs/credential-handling-policy.md"
 CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-09-credential-placeholder-policy.md"
+ACCOUNT_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-account-context-placeholders.md"
 ENV_EXAMPLE="$ROOT_DIR/.env.example"
 CHANGES="$ROOT_DIR/CHANGES.md"
 
@@ -42,6 +43,7 @@ for path in \
   "docs/plans/2026-06-09-fixture-provenance-checklist.md" \
   "docs/plans/2026-06-09-fixture-provenance-template.md" \
   "docs/plans/2026-06-09-readiness-make-gates.md" \
+  "docs/plans/2026-06-09-account-context-placeholders.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -159,6 +161,11 @@ if ! grep -Fq ".env.example" "$README" || ! grep -Fq "docs/credential-handling-p
   exit 1
 fi
 
+if ! grep -Fq "account context placeholders" "$README"; then
+  printf '%s\n' "README must document account context placeholders." >&2
+  exit 1
+fi
+
 if ! grep -Fq "fixture provenance checklist" "$README"; then
   printf '%s\n' "README must mention the fixture provenance checklist." >&2
   exit 1
@@ -210,19 +217,25 @@ for template_detail in "Fixture path" "Intended sample flow" "Redistribution per
   fi
 done
 
-for credential in "ADS_API_KEY=" "ADS_API_SECRET=" "ADS_ACCESS_TOKEN=" "ADS_ACCESS_TOKEN_SECRET=" "GNIP_BEARER_TOKEN="; do
+for credential in "ADS_API_KEY=" "ADS_API_SECRET=" "ADS_ACCESS_TOKEN=" "ADS_ACCESS_TOKEN_SECRET=" "ADS_ACCOUNT_ID=" "ADS_CUSTOMER_ID=" "GNIP_BEARER_TOKEN="; do
   if ! grep -Fxq "$credential" "$ENV_EXAMPLE"; then
     printf '%s\n' ".env.example must include empty placeholder: $credential" >&2
     exit 1
   fi
 done
 
-for credential in "ADS_API_KEY" "ADS_API_SECRET" "ADS_ACCESS_TOKEN" "ADS_ACCESS_TOKEN_SECRET" "GNIP_BEARER_TOKEN"; do
+for credential in "ADS_API_KEY" "ADS_API_SECRET" "ADS_ACCESS_TOKEN" "ADS_ACCESS_TOKEN_SECRET" "ADS_ACCOUNT_ID" "ADS_CUSTOMER_ID" "GNIP_BEARER_TOKEN"; do
   if ! grep -Fq "$credential" "$CREDENTIAL_POLICY"; then
     printf '%s\n' "Credential policy must document placeholder: $credential" >&2
     exit 1
   fi
 done
+
+if ! grep -Fq "Account and customer identifiers" "$CREDENTIAL_POLICY" ||
+  ! grep -Fq "not publishable sample data" "$CREDENTIAL_POLICY"; then
+  printf '%s\n' "Credential policy must distinguish account context placeholders from publishable sample data." >&2
+  exit 1
+fi
 
 for credential_policy_section in "## Allowed Credential Sources" "## Tracked Placeholders" "## Logging And Redaction" "## Verification Updates"; do
   if ! grep -Fq "$credential_policy_section" "$CREDENTIAL_POLICY"; then
@@ -255,6 +268,11 @@ fi
 
 if ! grep -Fq "credential placeholder contract" "$VISION"; then
   printf '%s\n' "VISION.md must describe the credential placeholder contract." >&2
+  exit 1
+fi
+
+if ! grep -Fq "account context placeholders" "$VISION"; then
+  printf '%s\n' "VISION.md must describe account context placeholders." >&2
   exit 1
 fi
 
@@ -310,6 +328,11 @@ fi
 
 if ! grep -Fq "ripgrep readiness prerequisite" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the ripgrep readiness prerequisite." >&2
+  exit 1
+fi
+
+if ! grep -Fq "account context placeholders" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the account context placeholders." >&2
   exit 1
 fi
 
@@ -370,6 +393,16 @@ fi
 
 if ! grep -Fq "make check" "$CREDENTIAL_PLAN"; then
   printf '%s\n' "Credential placeholder policy plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ACCOUNT_CONTEXT_PLAN"; then
+  printf '%s\n' "Account context placeholder plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ACCOUNT_CONTEXT_PLAN"; then
+  printf '%s\n' "Account context placeholder plan must record make check verification." >&2
   exit 1
 fi
 

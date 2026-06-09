@@ -19,11 +19,14 @@ configuration.
 - `ADS_API_SECRET`
 - `ADS_ACCESS_TOKEN`
 - `ADS_ACCESS_TOKEN_SECRET`
+- `ADS_ACCOUNT_ID`
+- `ADS_CUSTOMER_ID`
 - `GNIP_BEARER_TOKEN`
 
-The placeholder file must keep values empty. If the first runnable sample needs
-different names, update `.env.example`, this policy, the README, and
-`scripts/check-baseline.sh` in the same change.
+The placeholder file must keep values empty. Account and customer identifiers
+are local context values, not publishable sample data. If the first runnable
+sample needs different names, update `.env.example`, this policy, the README,
+and `scripts/check-baseline.sh` in the same change.
 
 ## Logging And Redaction
 

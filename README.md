@@ -83,6 +83,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ignored local files or external secret stores. See
   `docs/credential-handling-policy.md` before adding code that reads
   credentials.
+- Keep Ads account context placeholders such as account and customer IDs empty
+  in tracked files; real account context belongs in ignored local config.
 - Keep private, raw, cached, and exported Ads/GNIP data under ignored local
   directories until the project defines safe publishable fixtures.
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is
@@ -115,6 +117,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   fixture is safe to publish.
 - Use `docs/credential-handling-policy.md` to keep Ads API and GNIP credential
   names, placeholder files, and redacted logging expectations aligned.
+- Keep account context placeholders empty until runnable sample code defines
+  how account and customer IDs are supplied locally.
 - Use the fixture provenance checklist before committing any future sample
   fixture, and keep a completed `docs/fixture-provenance-template.md` record or
   equivalent plan fields with the fixture change.

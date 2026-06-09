@@ -69,6 +69,8 @@ manifest yet, ignores likely local credential and private-export paths, scans
 for obvious token material, and documents the required follow-up when the first
 real implementation is added. `make test` and `make build` intentionally keep
 the same readiness guard until runnable Ads API/GNIP code exists.
+The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
+script exits with an explicit prerequisite message when it is missing.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -102,6 +104,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the documentation-only readiness baseline until implementation begins.
 - See `docs/plans/2026-06-09-readiness-make-gates.md` for the root gate
   baseline.
+- See `docs/plans/2026-06-09-readiness-ripgrep-prerequisite.md` for the
+  readiness tool prerequisite guard.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

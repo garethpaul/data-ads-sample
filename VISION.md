@@ -19,6 +19,7 @@ Priority:
 
 - Establish basic project direction before adding code
 - Keep root verification gates aligned with the documentation-only baseline
+- Keep readiness tool prerequisites explicit before the source guard runs
 - Keep any future Ads API and GNIP credentials out of git
 - Keep the credential placeholder contract explicit before code exists
 - Document setup, required accounts, and sample data as soon as code exists

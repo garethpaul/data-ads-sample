@@ -46,6 +46,11 @@ for path in \
   require_file "$path"
 done
 
+if ! command -v rg >/dev/null 2>&1; then
+  printf '%s\n' "ripgrep (rg) must be installed for readiness secret and manifest scans." >&2
+  exit 1
+fi
+
 for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key" "secrets/" "data/private/" "data/raw/" "data/cache/" "data/exports/" "*.sqlite" "*.db"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
     printf '%s\n' ".gitignore must include $ignored" >&2
@@ -141,6 +146,11 @@ fi
 
 if ! grep -Fq "docs/fixture-provenance-template.md" "$README"; then
   printf '%s\n' "README must point future fixture work to the provenance template." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'ripgrep (`rg`)' "$README"; then
+  printf '%s\n' "README must document the ripgrep readiness prerequisite." >&2
   exit 1
 fi
 
@@ -248,6 +258,11 @@ if ! grep -Fq "credential placeholder contract" "$VISION"; then
   exit 1
 fi
 
+if ! grep -Fq "readiness tool prerequisites" "$VISION"; then
+  printf '%s\n' "VISION.md must describe readiness tool prerequisites." >&2
+  exit 1
+fi
+
 if ! grep -Fq "No primary dependency manifest was detected" "$SECURITY"; then
   printf '%s\n' "SECURITY.md must describe the current no-dependency baseline." >&2
   exit 1
@@ -290,6 +305,11 @@ fi
 
 if ! grep -Fq "credential placeholder policy" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the credential placeholder policy." >&2
+  exit 1
+fi
+
+if ! grep -Fq "ripgrep readiness prerequisite" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the ripgrep readiness prerequisite." >&2
   exit 1
 fi
 
@@ -350,6 +370,16 @@ fi
 
 if ! grep -Fq "make check" "$CREDENTIAL_PLAN"; then
   printf '%s\n' "Credential placeholder policy plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-readiness-ripgrep-prerequisite.md"; then
+  printf '%s\n' "Readiness ripgrep prerequisite plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-readiness-ripgrep-prerequisite.md"; then
+  printf '%s\n' "Readiness ripgrep prerequisite plan must record make check verification." >&2
   exit 1
 fi
 

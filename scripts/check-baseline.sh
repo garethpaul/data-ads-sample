@@ -8,6 +8,7 @@ SECURITY="$ROOT_DIR/SECURITY.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-repository-readiness-baseline.md"
 DATA_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-data-export-guard.md"
 FIXTURE_POLICY="$ROOT_DIR/docs/data-fixture-policy.md"
+FIXTURE_TEMPLATE="$ROOT_DIR/docs/fixture-provenance-template.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 
 require_file() {
@@ -27,10 +28,12 @@ for path in \
   "VISION.md" \
   "docs/readme-overview.svg" \
   "docs/data-fixture-policy.md" \
+  "docs/fixture-provenance-template.md" \
   "docs/plans/2026-06-08-repository-readiness-baseline.md" \
   "docs/plans/2026-06-08-data-export-guard.md" \
   "docs/plans/2026-06-09-safe-fixture-policy.md" \
   "docs/plans/2026-06-09-fixture-provenance-checklist.md" \
+  "docs/plans/2026-06-09-fixture-provenance-template.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -101,6 +104,11 @@ if ! grep -Fq "docs/data-fixture-policy.md" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/fixture-provenance-template.md" "$README"; then
+  printf '%s\n' "README must point future fixture work to the provenance template." >&2
+  exit 1
+fi
+
 if ! grep -Fq "fixture provenance checklist" "$README"; then
   printf '%s\n' "README must mention the fixture provenance checklist." >&2
   exit 1
@@ -126,9 +134,28 @@ if ! grep -Fq "## Provenance Requirements" "$FIXTURE_POLICY"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/fixture-provenance-template.md" "$FIXTURE_POLICY"; then
+  printf '%s\n' "Fixture policy must point to the provenance template." >&2
+  exit 1
+fi
+
 for provenance in "source or generation method" "license or permission" "PII review" "size rationale"; do
   if ! grep -Fq "$provenance" "$FIXTURE_POLICY"; then
     printf '%s\n' "Fixture policy must require provenance detail: $provenance" >&2
+    exit 1
+  fi
+done
+
+for template_section in "## Fixture Summary" "## Source Or Generation Method" "## License Or Permission" "## PII Review" "## Size Rationale" "## Guard Updates"; do
+  if ! grep -Fq "$template_section" "$FIXTURE_TEMPLATE"; then
+    printf '%s\n' "Fixture provenance template must include section: $template_section" >&2
+    exit 1
+  fi
+done
+
+for template_detail in "Fixture path" "Intended sample flow" "Redistribution permission" "Reviewer and review date" "Smallest useful fixture size" "scripts/check-baseline.sh"; do
+  if ! grep -Fq "$template_detail" "$FIXTURE_TEMPLATE"; then
+    printf '%s\n' "Fixture provenance template must include detail: $template_detail" >&2
     exit 1
   fi
 done
@@ -143,6 +170,11 @@ if ! grep -Fq "documentation-only" "$VISION"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/fixture-provenance-template.md" "$VISION"; then
+  printf '%s\n' "VISION.md must point future fixture work to the provenance template." >&2
+  exit 1
+fi
+
 if ! grep -Fq "No primary dependency manifest was detected" "$SECURITY"; then
   printf '%s\n' "SECURITY.md must describe the current no-dependency baseline." >&2
   exit 1
@@ -150,6 +182,11 @@ fi
 
 if ! grep -Fq "docs/data-fixture-policy.md" "$SECURITY"; then
   printf '%s\n' "SECURITY.md must point fixture changes to the fixture policy." >&2
+  exit 1
+fi
+
+if ! grep -Fq "docs/fixture-provenance-template.md" "$SECURITY"; then
+  printf '%s\n' "SECURITY.md must point fixture changes to the provenance template." >&2
   exit 1
 fi
 
@@ -165,6 +202,11 @@ fi
 
 if ! grep -Fq "fixture provenance checklist" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the fixture provenance checklist." >&2
+  exit 1
+fi
+
+if ! grep -Fq "fixture provenance template" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the fixture provenance template." >&2
   exit 1
 fi
 
@@ -195,6 +237,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-checklist.md"; then
   printf '%s\n' "Fixture provenance checklist plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-template.md"; then
+  printf '%s\n' "Fixture provenance template plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-template.md"; then
+  printf '%s\n' "Fixture provenance template plan must record make check verification." >&2
   exit 1
 fi
 

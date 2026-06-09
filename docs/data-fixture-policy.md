@@ -26,6 +26,8 @@ GNIP code. Future fixture data must be safe before it is committed.
 
 - Confirm the fixture is synthetic or publishable.
 - Complete the fixture provenance checklist before committing sample data.
+- Complete `docs/fixture-provenance-template.md` or include equivalent fields in
+  the same plan document.
 - Confirm the README explains how the fixture is used.
 - Update `scripts/check-baseline.sh` when a new safe fixture directory or file
   type is introduced.

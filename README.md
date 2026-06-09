@@ -20,6 +20,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `VISION.md` - project direction and maintenance guardrails
 - `CHANGES.md` - maintenance history
 - `docs/data-fixture-policy.md` - safe fixture criteria for future sample data
+- `docs/fixture-provenance-template.md` - review template for future fixture data
 - `scripts/check-baseline.sh` - source-level repository baseline guard
 - `docs/plans` - dated implementation and maintenance plans
 
@@ -77,7 +78,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is
   committed.
 - Future fixture pull requests must complete the fixture provenance checklist
-  with source, license, PII review, and size rationale details.
+  with source, license, PII review, and size rationale details. Use
+  `docs/fixture-provenance-template.md` for that record.
 
 ## Security and Privacy Notes
 
@@ -96,7 +98,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Use `docs/data-fixture-policy.md` to decide whether a future Ads/GNIP sample
   fixture is safe to publish.
 - Use the fixture provenance checklist before committing any future sample
-  fixture.
+  fixture, and keep a completed `docs/fixture-provenance-template.md` record or
+  equivalent plan fields with the fixture change.
 
 ## Contributing
 

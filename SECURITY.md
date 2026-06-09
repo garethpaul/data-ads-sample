@@ -30,7 +30,8 @@ Helpful reports include:
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before
-  committing sample data.
+  committing sample data. Use `docs/fixture-provenance-template.md` or
+  equivalent plan fields for source, license, PII review, and size rationale.
 
 
 ## Dependency and Supply Chain Security

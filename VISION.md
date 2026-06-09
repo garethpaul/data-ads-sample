@@ -29,6 +29,7 @@ Next priorities:
 - Add a minimal local verification command
 - Include fixture data that is safe to publish
 - Require fixture provenance before future sample data is committed
+- Use the fixture provenance template for future sample data reviews
 
 Contribution rules:
 
@@ -37,6 +38,8 @@ Contribution rules:
 - Keep private raw exports and caches out of git unless they are replaced with
   explicit safe fixtures.
 - Require safe fixture provenance before committing sample Ads/GNIP data.
+- Keep fixture provenance records with the fixture change by using
+  `docs/fixture-provenance-template.md` or equivalent plan fields.
 - Keep the first implementation small enough to review in one pass.
 - Document external account requirements explicitly.
 

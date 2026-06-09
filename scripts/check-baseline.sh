@@ -10,6 +10,9 @@ DATA_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-data-export-guard.md"
 MAKE_GATE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readiness-make-gates.md"
 FIXTURE_POLICY="$ROOT_DIR/docs/data-fixture-policy.md"
 FIXTURE_TEMPLATE="$ROOT_DIR/docs/fixture-provenance-template.md"
+CREDENTIAL_POLICY="$ROOT_DIR/docs/credential-handling-policy.md"
+CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-09-credential-placeholder-policy.md"
+ENV_EXAMPLE="$ROOT_DIR/.env.example"
 CHANGES="$ROOT_DIR/CHANGES.md"
 
 require_file() {
@@ -22,16 +25,19 @@ require_file() {
 
 for path in \
   ".gitignore" \
+  ".env.example" \
   "CHANGES.md" \
   "Makefile" \
   "README.md" \
   "SECURITY.md" \
   "VISION.md" \
+  "docs/credential-handling-policy.md" \
   "docs/readme-overview.svg" \
   "docs/data-fixture-policy.md" \
   "docs/fixture-provenance-template.md" \
   "docs/plans/2026-06-08-repository-readiness-baseline.md" \
   "docs/plans/2026-06-08-data-export-guard.md" \
+  "docs/plans/2026-06-09-credential-placeholder-policy.md" \
   "docs/plans/2026-06-09-safe-fixture-policy.md" \
   "docs/plans/2026-06-09-fixture-provenance-checklist.md" \
   "docs/plans/2026-06-09-fixture-provenance-template.md" \
@@ -47,7 +53,9 @@ for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key
   fi
 done
 
-tracked_sensitive=$(git -C "$ROOT_DIR" ls-files | grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
+tracked_sensitive=$(git -C "$ROOT_DIR" ls-files |
+  grep -Ev '(^|/)\.env\.example$' |
+  grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2
   exit 1
@@ -136,6 +144,11 @@ if ! grep -Fq "docs/fixture-provenance-template.md" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq ".env.example" "$README" || ! grep -Fq "docs/credential-handling-policy.md" "$README"; then
+  printf '%s\n' "README must document the credential placeholder policy." >&2
+  exit 1
+fi
+
 if ! grep -Fq "fixture provenance checklist" "$README"; then
   printf '%s\n' "README must mention the fixture provenance checklist." >&2
   exit 1
@@ -187,6 +200,34 @@ for template_detail in "Fixture path" "Intended sample flow" "Redistribution per
   fi
 done
 
+for credential in "ADS_API_KEY=" "ADS_API_SECRET=" "ADS_ACCESS_TOKEN=" "ADS_ACCESS_TOKEN_SECRET=" "GNIP_BEARER_TOKEN="; do
+  if ! grep -Fxq "$credential" "$ENV_EXAMPLE"; then
+    printf '%s\n' ".env.example must include empty placeholder: $credential" >&2
+    exit 1
+  fi
+done
+
+for credential in "ADS_API_KEY" "ADS_API_SECRET" "ADS_ACCESS_TOKEN" "ADS_ACCESS_TOKEN_SECRET" "GNIP_BEARER_TOKEN"; do
+  if ! grep -Fq "$credential" "$CREDENTIAL_POLICY"; then
+    printf '%s\n' "Credential policy must document placeholder: $credential" >&2
+    exit 1
+  fi
+done
+
+for credential_policy_section in "## Allowed Credential Sources" "## Tracked Placeholders" "## Logging And Redaction" "## Verification Updates"; do
+  if ! grep -Fq "$credential_policy_section" "$CREDENTIAL_POLICY"; then
+    printf '%s\n' "Credential policy must include section: $credential_policy_section" >&2
+    exit 1
+  fi
+done
+
+for credential_policy_detail in ".env.example" "values empty" "authorization headers" "scripts/check-baseline.sh"; do
+  if ! grep -Fq "$credential_policy_detail" "$CREDENTIAL_POLICY"; then
+    printf '%s\n' "Credential policy must include detail: $credential_policy_detail" >&2
+    exit 1
+  fi
+done
+
 if ! grep -Fq "credentials out of git" "$VISION"; then
   printf '%s\n' "VISION.md must keep future credentials out of git." >&2
   exit 1
@@ -199,6 +240,11 @@ fi
 
 if ! grep -Fq "docs/fixture-provenance-template.md" "$VISION"; then
   printf '%s\n' "VISION.md must point future fixture work to the provenance template." >&2
+  exit 1
+fi
+
+if ! grep -Fq "credential placeholder contract" "$VISION"; then
+  printf '%s\n' "VISION.md must describe the credential placeholder contract." >&2
   exit 1
 fi
 
@@ -222,6 +268,11 @@ if ! grep -Fq "fixture provenance checklist" "$SECURITY"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/credential-handling-policy.md" "$SECURITY" || ! grep -Fq ".env.example" "$SECURITY"; then
+  printf '%s\n' "SECURITY.md must point credential changes to the credential policy and placeholder file." >&2
+  exit 1
+fi
+
 if ! grep -Fq "repository readiness baseline" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the repository readiness baseline." >&2
   exit 1
@@ -234,6 +285,11 @@ fi
 
 if ! grep -Fq "fixture provenance template" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the fixture provenance template." >&2
+  exit 1
+fi
+
+if ! grep -Fq "credential placeholder policy" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the credential placeholder policy." >&2
   exit 1
 fi
 
@@ -284,6 +340,16 @@ fi
 
 if ! grep -Fq "make check" "$MAKE_GATE_PLAN"; then
   printf '%s\n' "Readiness make gate plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$CREDENTIAL_PLAN"; then
+  printf '%s\n' "Credential placeholder policy plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$CREDENTIAL_PLAN"; then
+  printf '%s\n' "Credential placeholder policy plan must record make check verification." >&2
   exit 1
 fi
 

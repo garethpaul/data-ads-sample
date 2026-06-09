@@ -77,6 +77,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - No required secret or credential file was identified in the repository scan.
 - Future Ads API or GNIP credentials must stay in environment variables or local
   untracked configuration such as `.env`, which is ignored by this repository.
+- Use `.env.example` only for empty placeholder names, and keep real values in
+  ignored local files or external secret stores. See
+  `docs/credential-handling-policy.md` before adding code that reads
+  credentials.
 - Keep private, raw, cached, and exported Ads/GNIP data under ignored local
   directories until the project defines safe publishable fixtures.
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is
@@ -105,6 +109,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the guard to distinguish safe fixtures from private exports.
 - Use `docs/data-fixture-policy.md` to decide whether a future Ads/GNIP sample
   fixture is safe to publish.
+- Use `docs/credential-handling-policy.md` to keep Ads API and GNIP credential
+  names, placeholder files, and redacted logging expectations aligned.
 - Use the fixture provenance checklist before committing any future sample
   fixture, and keep a completed `docs/fixture-provenance-template.md` record or
   equivalent plan fields with the fixture change.

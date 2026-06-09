@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added a credential placeholder policy and empty `.env.example` for future Ads
+  API/GNIP runtime work.
 - Added root `make lint`, `make test`, `make build`, and `make check` gates
   around the documentation-only readiness baseline.
 - Added a reusable fixture provenance template for future Ads API/GNIP sample

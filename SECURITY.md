@@ -27,6 +27,8 @@ Helpful reports include:
 - This repository appears to be a public sample, documentation, or utility project. The active security scope is the code and documentation on the default branch.
 - The repository scan did not identify production authentication, payment, or secret-management code. Treat the project as public sample code unless future changes add sensitive surfaces.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
+- Credential placeholders are tracked in `.env.example`; real values must stay
+  out of git and follow `docs/credential-handling-policy.md`.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before

@@ -2,8 +2,8 @@
 
 ## 2026-06-09
 
-- Added empty Ads account/customer context placeholders and documented that real
-  IDs stay in ignored local configuration.
+- Added empty Ads account context placeholders for Ads account/customer IDs and
+  documented that real IDs stay in ignored local configuration.
 - Added an explicit ripgrep readiness prerequisite before source guard scans.
 - Added a credential placeholder policy and empty `.env.example` for future Ads
   API/GNIP runtime work.

@@ -28,6 +28,7 @@ Next priorities:
 - Define the sample language, runtime, and supported API flow
 - Add a minimal local verification command
 - Include fixture data that is safe to publish
+- Require fixture provenance before future sample data is committed
 
 Contribution rules:
 

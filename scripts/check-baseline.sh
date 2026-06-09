@@ -7,6 +7,7 @@ VISION="$ROOT_DIR/VISION.md"
 SECURITY="$ROOT_DIR/SECURITY.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-repository-readiness-baseline.md"
 DATA_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-data-export-guard.md"
+FIXTURE_POLICY="$ROOT_DIR/docs/data-fixture-policy.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 
 require_file() {
@@ -29,6 +30,7 @@ for path in \
   "docs/plans/2026-06-08-repository-readiness-baseline.md" \
   "docs/plans/2026-06-08-data-export-guard.md" \
   "docs/plans/2026-06-09-safe-fixture-policy.md" \
+  "docs/plans/2026-06-09-fixture-provenance-checklist.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -99,20 +101,37 @@ if ! grep -Fq "docs/data-fixture-policy.md" "$README"; then
   exit 1
 fi
 
-if ! grep -Fq "## Allowed Fixtures" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+if ! grep -Fq "fixture provenance checklist" "$README"; then
+  printf '%s\n' "README must mention the fixture provenance checklist." >&2
+  exit 1
+fi
+
+if ! grep -Fq "## Allowed Fixtures" "$FIXTURE_POLICY"; then
   printf '%s\n' "Fixture policy must define allowed fixture criteria." >&2
   exit 1
 fi
 
-if ! grep -Fq "## Disallowed Data" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+if ! grep -Fq "## Disallowed Data" "$FIXTURE_POLICY"; then
   printf '%s\n' "Fixture policy must define disallowed data." >&2
   exit 1
 fi
 
-if ! grep -Fq "synthetic" "$ROOT_DIR/docs/data-fixture-policy.md" || ! grep -Fq "publishable" "$ROOT_DIR/docs/data-fixture-policy.md"; then
+if ! grep -Fq "synthetic" "$FIXTURE_POLICY" || ! grep -Fq "publishable" "$FIXTURE_POLICY"; then
   printf '%s\n' "Fixture policy must require synthetic or publishable data." >&2
   exit 1
 fi
+
+if ! grep -Fq "## Provenance Requirements" "$FIXTURE_POLICY"; then
+  printf '%s\n' "Fixture policy must define provenance requirements." >&2
+  exit 1
+fi
+
+for provenance in "source or generation method" "license or permission" "PII review" "size rationale"; do
+  if ! grep -Fq "$provenance" "$FIXTURE_POLICY"; then
+    printf '%s\n' "Fixture policy must require provenance detail: $provenance" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "credentials out of git" "$VISION"; then
   printf '%s\n' "VISION.md must keep future credentials out of git." >&2
@@ -134,8 +153,18 @@ if ! grep -Fq "docs/data-fixture-policy.md" "$SECURITY"; then
   exit 1
 fi
 
+if ! grep -Fq "fixture provenance checklist" "$SECURITY"; then
+  printf '%s\n' "SECURITY.md must mention the fixture provenance checklist." >&2
+  exit 1
+fi
+
 if ! grep -Fq "repository readiness baseline" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the repository readiness baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq "fixture provenance checklist" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the fixture provenance checklist." >&2
   exit 1
 fi
 
@@ -156,6 +185,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-safe-fixture-policy.md"; then
   printf '%s\n' "Safe fixture policy plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-checklist.md"; then
+  printf '%s\n' "Fixture provenance checklist plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-fixture-provenance-checklist.md"; then
+  printf '%s\n' "Fixture provenance checklist plan must record make check verification." >&2
   exit 1
 fi
 

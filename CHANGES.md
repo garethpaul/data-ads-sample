@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added a fixture provenance checklist requirement for future Ads API/GNIP
+  sample data.
 - Added a safe fixture policy for future Ads API/GNIP sample data and wired it
   into the readiness guard.
 

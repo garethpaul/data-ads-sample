@@ -29,6 +29,8 @@ Helpful reports include:
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
+- Future fixture changes must complete the fixture provenance checklist before
+  committing sample data.
 
 
 ## Dependency and Supply Chain Security

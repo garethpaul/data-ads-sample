@@ -76,6 +76,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   directories until the project defines safe publishable fixtures.
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is
   committed.
+- Future fixture pull requests must complete the fixture provenance checklist
+  with source, license, PII review, and size rationale details.
 
 ## Security and Privacy Notes
 
@@ -93,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the guard to distinguish safe fixtures from private exports.
 - Use `docs/data-fixture-policy.md` to decide whether a future Ads/GNIP sample
   fixture is safe to publish.
+- Use the fixture provenance checklist before committing any future sample
+  fixture.
 
 ## Contributing
 

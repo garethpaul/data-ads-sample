@@ -25,7 +25,18 @@ GNIP code. Future fixture data must be safe before it is committed.
 ## Review Checklist
 
 - Confirm the fixture is synthetic or publishable.
+- Complete the fixture provenance checklist before committing sample data.
 - Confirm the README explains how the fixture is used.
 - Update `scripts/check-baseline.sh` when a new safe fixture directory or file
   type is introduced.
 - Keep private, raw, cached, and exported data in ignored local directories.
+
+## Provenance Requirements
+
+Every future fixture pull request must document:
+
+- source or generation method
+- license or permission for redistribution
+- PII review confirming real account, campaign, audience, and user identifiers
+  are absent or irreversibly replaced
+- size rationale explaining why the fixture is the smallest useful sample

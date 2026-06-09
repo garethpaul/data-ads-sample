@@ -129,6 +129,11 @@ if ! grep -Fq "No primary dependency manifest was detected" "$SECURITY"; then
   exit 1
 fi
 
+if ! grep -Fq "docs/data-fixture-policy.md" "$SECURITY"; then
+  printf '%s\n' "SECURITY.md must point fixture changes to the fixture policy." >&2
+  exit 1
+fi
+
 if ! grep -Fq "repository readiness baseline" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the repository readiness baseline." >&2
   exit 1

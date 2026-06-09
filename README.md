@@ -19,6 +19,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `SECURITY.md` - security reporting and disclosure guidance
 - `VISION.md` - project direction and maintenance guardrails
 - `CHANGES.md` - maintenance history
+- `docs/data-fixture-policy.md` - safe fixture criteria for future sample data
 - `scripts/check-baseline.sh` - source-level repository baseline guard
 - `docs/plans` - dated implementation and maintenance plans
 

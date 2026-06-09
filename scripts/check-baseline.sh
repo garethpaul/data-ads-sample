@@ -20,6 +20,7 @@ require_file() {
 for path in \
   ".gitignore" \
   "CHANGES.md" \
+  "Makefile" \
   "README.md" \
   "SECURITY.md" \
   "VISION.md" \
@@ -73,6 +74,16 @@ fi
 
 if ! grep -Fq "scripts/check-baseline.sh" "$README"; then
   printf '%s\n' "README must document the baseline guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must run the readiness baseline guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$README"; then
+  printf '%s\n' "README must document the make check wrapper." >&2
   exit 1
 fi
 

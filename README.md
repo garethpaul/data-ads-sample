@@ -55,6 +55,7 @@ safe sample data when implementation begins.
 Run the repository readiness guard before committing changes:
 
 ```bash
+make check
 scripts/check-baseline.sh
 ```
 

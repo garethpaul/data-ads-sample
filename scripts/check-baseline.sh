@@ -54,7 +54,7 @@ for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key
 done
 
 tracked_sensitive=$(git -C "$ROOT_DIR" ls-files |
-  grep -Ev '(^|/)\.env\.example$' |
+  grep -Ev '(^|/)\.env\.example$|^docs/credential-handling-policy\.md$|^docs/plans/2026-06-09-credential-placeholder-policy\.md$' |
   grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2

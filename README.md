@@ -83,6 +83,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ignored local files or external secret stores. See
   `docs/credential-handling-policy.md` before adding code that reads
   credentials.
+- Ads account/customer identifiers are local context values; keep
+  `ADS_ACCOUNT_ID` and `ADS_CUSTOMER_ID` empty in `.env.example` and populate
+  them only in ignored local configuration.
 - Keep private, raw, cached, and exported Ads/GNIP data under ignored local
   directories until the project defines safe publishable fixtures.
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is

@@ -15,6 +15,8 @@ CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-09-credential-placeholder-policy.m
 ACCOUNT_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-account-context-placeholders.md"
 ENV_EXAMPLE="$ROOT_DIR/.env.example"
 CHANGES="$ROOT_DIR/CHANGES.md"
+CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 
 require_file() {
   path=$1
@@ -27,6 +29,7 @@ require_file() {
 for path in \
   ".gitignore" \
   ".env.example" \
+  ".github/workflows/check.yml" \
   "CHANGES.md" \
   "Makefile" \
   "README.md" \
@@ -44,9 +47,36 @@ for path in \
   "docs/plans/2026-06-09-fixture-provenance-template.md" \
   "docs/plans/2026-06-09-readiness-make-gates.md" \
   "docs/plans/2026-06-09-account-context-placeholders.md" \
+  "docs/plans/2026-06-10-ci-baseline.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
+
+for workflow_contract in \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "permissions:" \
+  "contents: read" \
+  "workflow_dispatch:" \
+  "timeout-minutes: 5" \
+  "run: make check"; do
+  if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
+  printf '%s\n' "CI baseline plan must record completed make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GitHub Actions" "$README" ||
+  ! grep -Fq "GitHub Actions" "$VISION" ||
+  ! grep -Fq "GitHub Actions" "$SECURITY" ||
+  ! grep -Fq "GitHub Actions" "$CHANGES"; then
+  printf '%s\n' "Project docs must preserve the hosted readiness baseline." >&2
+  exit 1
+fi
 
 if ! command -v rg >/dev/null 2>&1; then
   printf '%s\n' "ripgrep (rg) must be installed for readiness secret and manifest scans." >&2

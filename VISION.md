@@ -20,6 +20,7 @@ Priority:
 - Establish basic project direction before adding code
 - Keep root verification gates aligned with the documentation-only baseline
 - Keep readiness tool prerequisites explicit before the source guard runs
+- Keep the credential and fixture-safety baseline running in GitHub Actions
 - Keep any future Ads API and GNIP credentials out of git
 - Keep the credential placeholder contract explicit before code exists
 - Keep account context placeholders empty until runnable code defines them

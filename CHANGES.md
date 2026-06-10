@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-10
+
+- Added a pinned, read-only GitHub Actions workflow that runs the existing
+  `make check` credential, fixture, and repository readiness baseline.
+- Made the workflow and completed CI plan part of the checked repository
+  contract without introducing a runtime or package manager.
+
 ## 2026-06-09
 
 - Added empty Ads account context placeholders and documented that real account

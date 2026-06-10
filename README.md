@@ -16,6 +16,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 ## Repository Contents
 
+- `.github/workflows/check.yml` - hosted readiness and data-safety baseline
 - `SECURITY.md` - security reporting and disclosure guidance
 - `VISION.md` - project direction and maintenance guardrails
 - `CHANGES.md` - maintenance history
@@ -72,6 +73,11 @@ the same readiness guard until runnable Ads API/GNIP code exists.
 The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
 script exits with an explicit prerequisite message when it is missing.
 
+GitHub Actions runs `make check` for pushes, pull requests, and manual
+dispatches. The workflow uses a commit-pinned checkout action, read-only
+repository access, and a bounded runtime without adding a package manager or
+runtime dependency.
+
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
@@ -108,6 +114,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   baseline.
 - See `docs/plans/2026-06-09-readiness-ripgrep-prerequisite.md` for the
   readiness tool prerequisite guard.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the hosted readiness and
+  data-safety baseline.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

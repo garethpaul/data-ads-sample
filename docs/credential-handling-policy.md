@@ -33,6 +33,8 @@ and `scripts/check-baseline.sh` in the same change.
 Future code must not print authorization headers, credentials, bearer tokens,
 cookies, account IDs, customer IDs, or raw private exports. Error output should
 name the missing variable or setup step without echoing configured values.
+Repository readiness scans follow the same rule: findings identify affected
+files without printing the matched credential or account-context value.
 
 ## Verification Updates
 

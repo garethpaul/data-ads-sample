@@ -72,6 +72,9 @@ real implementation is added. `make test` and `make build` intentionally keep
 the same readiness guard until runnable Ads API/GNIP code exists.
 The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
 script exits with an explicit prerequisite message when it is missing.
+Credential and account-context findings report filenames without echoing
+matched values, so a failed local or hosted check does not copy secrets into
+terminal or CI logs.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
@@ -92,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   credentials.
 - Keep Ads account context placeholders such as account and customer IDs empty
   in tracked files; real account context belongs in ignored local config.
+- The readiness scanner rejects populated account or customer ID assignments in
+  tracked content and reports filenames without echoing matched values.
 - Keep private, raw, cached, and exported Ads/GNIP data under ignored local
   directories until the project defines safe publishable fixtures.
 - Future fixture data must follow `docs/data-fixture-policy.md` before it is
@@ -117,6 +122,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   readiness tool prerequisite guard.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the hosted readiness and
   data-safety baseline.
+- See `docs/plans/2026-06-10-readiness-scan-redaction.md` for filename-only
+  credential findings and populated account-context detection.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

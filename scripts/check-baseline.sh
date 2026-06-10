@@ -17,6 +17,8 @@ ENV_EXAMPLE="$ROOT_DIR/.env.example"
 CHANGES="$ROOT_DIR/CHANGES.md"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+SCANNER_REDACTION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-readiness-scan-redaction.md"
+MAKEFILE="$ROOT_DIR/Makefile"
 
 require_file() {
   path=$1
@@ -48,6 +50,7 @@ for path in \
   "docs/plans/2026-06-09-readiness-make-gates.md" \
   "docs/plans/2026-06-09-account-context-placeholders.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
+  "docs/plans/2026-06-10-readiness-scan-redaction.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -85,6 +88,12 @@ if ! command -v rg >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ "$(grep -Ec '^[a-z_]+_files=\$\(rg -l --hidden' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 3 ] ||
+  grep -Eq '^[a-z_]+_files=\$\(rg -n --hidden' "$ROOT_DIR/scripts/check-baseline.sh"; then
+  printf '%s\n' "Readiness content scans must report filenames instead of matched values." >&2
+  exit 1
+fi
+
 for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key" "secrets/" "data/private/" "data/raw/" "data/cache/" "data/exports/" "*.sqlite" "*.db"; do
   if ! grep -Fq "$ignored" "$ROOT_DIR/.gitignore"; then
     printf '%s\n' ".gitignore must include $ignored" >&2
@@ -100,26 +109,37 @@ if [ -n "$tracked_sensitive" ]; then
   exit 1
 fi
 
-secret_content=$(rg -n --hidden \
+secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!docs/plans/**' \
   --glob '!scripts/check-baseline.sh' \
   'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}' \
   "$ROOT_DIR" || true)
-if [ -n "$secret_content" ]; then
-  printf '%s\n%s\n' "Potential secret material detected:" "$secret_content" >&2
-  exit 1
+if [ -n "$secret_files" ]; then
+	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
+	exit 1
 fi
 
-api_secret_content=$(rg -n --hidden -i \
+api_secret_files=$(rg -l --hidden -i \
   --glob '!**/.git/**' \
   --glob '!docs/plans/**' \
   --glob '!scripts/check-baseline.sh' \
   'bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(twitter|gnip|ads)[A-Za-z0-9_ -]{0,32}(secret|token|key)[A-Za-z0-9_ -]{0,16}[:=][[:space:]]*[A-Za-z0-9_./+=-]{20,}' \
   "$ROOT_DIR" || true)
-if [ -n "$api_secret_content" ]; then
-  printf '%s\n%s\n' "Potential Ads API, GNIP, or bearer token material detected:" "$api_secret_content" >&2
-  exit 1
+if [ -n "$api_secret_files" ]; then
+	printf '%s\n%s\n' "Potential Ads API, GNIP, or bearer token material detected in:" "$api_secret_files" >&2
+	exit 1
+fi
+
+account_context_files=$(rg -l --hidden -i \
+	--glob '!**/.git/**' \
+	--glob '!docs/plans/**' \
+	--glob '!scripts/check-baseline.sh' \
+	"(ads[_ -]?)?(account|customer)[_ -]?id[\"']?[[:space:]]*[:=][[:space:]]*[\"']?[0-9]{5,}" \
+	"$ROOT_DIR" || true)
+if [ -n "$account_context_files" ]; then
+	printf '%s\n%s\n' "Potential populated Ads account context detected in:" "$account_context_files" >&2
+	exit 1
 fi
 
 runtime_manifests=$(git -C "$ROOT_DIR" ls-files | grep -E '(^|/)(package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)$' || true)
@@ -135,6 +155,12 @@ fi
 
 if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
   printf '%s\n' "Makefile must run the readiness baseline guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
+  [ "$(grep -c '\$(ROOT)scripts/check-baseline.sh' "$MAKEFILE")" -ne 3 ]; then
+  printf '%s\n' "Make readiness targets must resolve the baseline from the repository root." >&2
   exit 1
 fi
 
@@ -196,6 +222,11 @@ fi
 if ! grep -Fq "account context placeholders" "$README"; then
   printf '%s\n' "README must document account context placeholders." >&2
   exit 1
+fi
+
+if ! grep -Fq "reports filenames without echoing matched values" "$README"; then
+	printf '%s\n' "README must document redacted readiness scan output." >&2
+	exit 1
 fi
 
 if ! grep -Fq "fixture provenance checklist" "$README"; then
@@ -445,6 +476,12 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-readiness-ripgrep-prerequisite.md"; then
   printf '%s\n' "Readiness ripgrep prerequisite plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$SCANNER_REDACTION_PLAN" ||
+  ! grep -Fq "make check" "$SCANNER_REDACTION_PLAN"; then
+  printf '%s\n' "Readiness scan redaction plan must be completed and record verification." >&2
   exit 1
 fi
 

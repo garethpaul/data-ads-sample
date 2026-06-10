@@ -2,6 +2,10 @@
 
 ## 2026-06-10
 
+- Redacted credential scanner failures to filenames and added populated Ads
+  account/customer identifier detection without echoing matched values.
+- Rooted Make readiness targets to the repository and refreshed the checkout
+  action annotation.
 - Added a pinned, read-only GitHub Actions workflow that runs the existing
   `make check` credential, fixture, and repository readiness baseline.
 - Made the workflow and completed CI plan part of the checked repository

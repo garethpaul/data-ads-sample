@@ -24,6 +24,8 @@ Priority:
 - Keep any future Ads API and GNIP credentials out of git
 - Keep the credential placeholder contract explicit before code exists
 - Keep account context placeholders empty until runnable code defines them
+- Keep readiness failures redacted to affected filenames and reject populated
+  account or customer ID assignments
 - Document setup, required accounts, and sample data as soon as code exists
 - Prefer a small runnable example over a broad client wrapper
 

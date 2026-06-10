@@ -6,6 +6,8 @@
   `make check` credential, fixture, and repository readiness baseline.
 - Made the workflow and completed CI plan part of the checked repository
   contract without introducing a runtime or package manager.
+- Pinned the hosted runner to Ubuntu 24.04 and installed ripgrep explicitly so
+  credential and manifest scans cannot be skipped by runner image changes.
 
 ## 2026-06-09
 

@@ -75,8 +75,9 @@ script exits with an explicit prerequisite message when it is missing.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, and a bounded runtime without adding a package manager or
-runtime dependency.
+repository access, and a bounded Ubuntu 24.04 runtime. CI installs ripgrep as
+the sole readiness tool without adding a project package manager or runtime
+dependency.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

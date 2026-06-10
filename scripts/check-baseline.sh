@@ -57,7 +57,9 @@ for workflow_contract in \
   "permissions:" \
   "contents: read" \
   "workflow_dispatch:" \
+  "runs-on: ubuntu-24.04" \
   "timeout-minutes: 5" \
+  "sudo apt-get install --yes --no-install-recommends ripgrep" \
   "run: make check"; do
   if ! grep -Fq "$workflow_contract" "$CI_WORKFLOW"; then
     printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2

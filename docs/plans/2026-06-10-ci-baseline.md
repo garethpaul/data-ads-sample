@@ -20,6 +20,8 @@ provenance requirements, but those contracts were not enforced on GitHub.
 
 - Added `.github/workflows/check.yml` for pushes, pull requests, and manual
   dispatches.
+- Pinned the runner to Ubuntu 24.04 and installed ripgrep explicitly before the
+  readiness gate.
 - Pinned `actions/checkout` to a reviewed commit, limited repository access to
   read-only, and bounded execution with timeout and concurrency cancellation.
 - Extended `scripts/check-baseline.sh` to require the workflow and this plan.

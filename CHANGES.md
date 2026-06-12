@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-12
+
+- Added isolated mutation tests for generic secret, Ads/GNIP bearer-token, and
+  populated account-context scanner findings.
+- Asserted that scanner failures report affected filenames without reproducing
+  the complete matched value, and wired the suite into `make test`.
+
 ## 2026-06-10
 
 - Redacted credential scanner failures to filenames and added populated Ads

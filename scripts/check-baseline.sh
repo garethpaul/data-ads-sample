@@ -18,7 +18,9 @@ CHANGES="$ROOT_DIR/CHANGES.md"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 SCANNER_REDACTION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-readiness-scan-redaction.md"
+SCANNER_TEST_PLAN="$ROOT_DIR/docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
+SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
 require_file() {
   path=$1
@@ -51,7 +53,9 @@ for path in \
   "docs/plans/2026-06-09-account-context-placeholders.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-readiness-scan-redaction.md" \
-  "scripts/check-baseline.sh"; do
+  "docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md" \
+  "scripts/check-baseline.sh" \
+  "tests/check-baseline.sh"; do
   require_file "$path"
 done
 
@@ -159,8 +163,23 @@ if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
 fi
 
 if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" ||
-  [ "$(grep -c '\$(ROOT)scripts/check-baseline.sh' "$MAKEFILE")" -ne 3 ]; then
+  [ "$(grep -c '\$(ROOT)scripts/check-baseline.sh' "$MAKEFILE")" -ne 2 ] ||
+  [ "$(grep -c '\$(ROOT)tests/check-baseline.sh' "$MAKEFILE")" -ne 1 ]; then
   printf '%s\n' "Make readiness targets must resolve the baseline from the repository root." >&2
+  exit 1
+fi
+
+if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
+  ! grep -Fq "Potential secret material detected in:" "$SCANNER_TEST" ||
+  ! grep -Fq "Potential Ads API, GNIP, or bearer token material detected in:" "$SCANNER_TEST" ||
+  ! grep -Fq "Potential populated Ads account context detected in:" "$SCANNER_TEST"; then
+  printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Readiness Scanner Regression Tests" "$SCANNER_TEST_PLAN" ||
+  ! grep -Fq "tests/check-baseline.sh" "$SCANNER_TEST_PLAN"; then
+  printf '%s\n' "Scanner regression test plan must document the behavior harness." >&2
   exit 1
 fi
 

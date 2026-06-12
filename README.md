@@ -23,6 +23,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `docs/data-fixture-policy.md` - safe fixture criteria for future sample data
 - `docs/fixture-provenance-template.md` - review template for future fixture data
 - `scripts/check-baseline.sh` - source-level repository baseline guard
+- `tests/check-baseline.sh` - isolated scanner behavior and redaction tests
 - `docs/plans` - dated implementation and maintenance plans
 
 Additional scan context:
@@ -30,7 +31,7 @@ Additional scan context:
 - Source directories: no top-level source directories detected
 - Dependency and build manifests: none detected
 - Entry points or build surfaces: `scripts/check-baseline.sh`
-- Test-looking files: no obvious test files detected
+- Test entry point: `tests/check-baseline.sh`
 
 ## Getting Started
 
@@ -68,8 +69,10 @@ scripts/check-baseline.sh
 The current guard verifies that this documentation-only sample has no runtime
 manifest yet, ignores likely local credential and private-export paths, scans
 for obvious token material, and documents the required follow-up when the first
-real implementation is added. `make test` and `make build` intentionally keep
-the same readiness guard until runnable Ads API/GNIP code exists.
+real implementation is added. `make test` runs isolated mutation tests for the
+scanner's secret, bearer-token, account-context, and filename-only redaction
+behavior. No application runtime tests exist until runnable Ads API/GNIP code
+is added; `make build` continues to run the readiness guard.
 The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
 script exits with an explicit prerequisite message when it is missing.
 Credential and account-context findings report filenames without echoing
@@ -124,6 +127,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   data-safety baseline.
 - See `docs/plans/2026-06-10-readiness-scan-redaction.md` for filename-only
   credential findings and populated account-context detection.
+- See
+  `docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md` for
+  the isolated scanner behavior and redaction test contract.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

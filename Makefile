@@ -6,8 +6,8 @@ lint:
 	$(ROOT)scripts/check-baseline.sh
 
 test:
-	$(ROOT)scripts/check-baseline.sh
-	@echo "No runtime tests are configured because this repository is documentation-only."
+	$(ROOT)tests/check-baseline.sh
+	@echo "No application runtime tests are configured because this repository is documentation-only."
 
 build:
 	$(ROOT)scripts/check-baseline.sh

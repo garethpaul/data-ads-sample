@@ -6,6 +6,8 @@
   populated account-context scanner findings.
 - Asserted that scanner failures report affected filenames without reproducing
   the complete matched value, and wired the suite into `make test`.
+- Rejected tracked symbolic links before content scans and added an isolated
+  regression proving diagnostics expose only the link path, not its target.
 
 ## 2026-06-10
 

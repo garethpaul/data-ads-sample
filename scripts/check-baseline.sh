@@ -19,6 +19,7 @@ CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 SCANNER_REDACTION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-readiness-scan-redaction.md"
 SCANNER_TEST_PLAN="$ROOT_DIR/docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md"
+SYMLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-12-tracked-symlink-guard.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -54,6 +55,7 @@ for path in \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-readiness-scan-redaction.md" \
   "docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md" \
+  "docs/plans/2026-06-12-tracked-symlink-guard.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -110,6 +112,13 @@ tracked_sensitive=$(git -C "$ROOT_DIR" ls-files |
   grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2
+  exit 1
+fi
+
+tracked_symlinks=$(git -C "$ROOT_DIR" ls-files -s |
+  awk '$1 == "120000" { print substr($0, index($0, "\t") + 1) }')
+if [ -n "$tracked_symlinks" ]; then
+  printf '%s\n%s\n' "Tracked symbolic links are not allowed:" "$tracked_symlinks" >&2
   exit 1
 fi
 
@@ -170,10 +179,17 @@ if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFIL
 fi
 
 if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_tracked_symlink_rejected" "$SCANNER_TEST" ||
   ! grep -Fq "Potential secret material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential Ads API, GNIP, or bearer token material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential populated Ads account context detected in:" "$SCANNER_TEST"; then
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$SYMLINK_GUARD_PLAN" ||
+  ! grep -Fq "Tracked Symlink Guard" "$SYMLINK_GUARD_PLAN"; then
+  printf '%s\n' "Tracked symlink guard plan must remain completed." >&2
   exit 1
 fi
 

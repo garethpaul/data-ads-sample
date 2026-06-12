@@ -44,6 +44,8 @@ Contribution rules:
 - Do not add generated credentials, tokens, or private customer data.
 - Keep private raw exports and caches out of git unless they are replaced with
   explicit safe fixtures.
+- Keep tracked symlinks out of the repository so credential and fixture checks
+  remain bounded to reviewed files.
 - Require safe fixture provenance before committing sample Ads/GNIP data.
 - Keep fixture provenance records with the fixture change by using
   `docs/fixture-provenance-template.md` or equivalent plan fields.

@@ -34,6 +34,8 @@ Helpful reports include:
   out of git and follow `docs/credential-handling-policy.md`.
 - Readiness scans report only affected filenames, never matched credential,
   account ID, or customer ID values, to avoid copying secrets into CI logs.
+- Tracked symbolic links are rejected so readiness scans cannot resolve or
+  bypass content through machine-local paths outside the repository.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before

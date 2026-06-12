@@ -59,6 +59,33 @@ assert_rejected_without_value() {
   esac
 }
 
+assert_tracked_symlink_rejected() {
+  prepare_case
+  link_target='../outside/private-credential.txt'
+  ln -s "$link_target" "$CASE_DIR/linked-input"
+  git -C "$CASE_DIR" add linked-input
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "tracked symlink: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked symbolic links are not allowed:"*"linked-input"*) ;;
+    *)
+      printf '%s\n%s\n' "tracked symlink: expected diagnostic and link filename" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$link_target"*)
+      printf '%s\n' "tracked symlink: scanner output exposed the link target" >&2
+      exit 1
+      ;;
+  esac
+}
+
 prepare_case
 "$CASE_DIR/scripts/check-baseline.sh" >/dev/null
 
@@ -82,5 +109,7 @@ assert_rejected_without_value \
   "Ads account context" \
   "$account_context" \
   "Potential populated Ads account context detected in:"
+
+assert_tracked_symlink_rejected
 
 printf '%s\n' "Readiness scanner regression tests passed."

@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Stopped the hosted readiness checkout from persisting its credential and
+  added an exact contract for the sole workflow and checkout step.
 - Added isolated mutation tests for generic secret, Ads/GNIP bearer-token, and
   populated account-context scanner findings.
 - Asserted that scanner failures report affected filenames without reproducing

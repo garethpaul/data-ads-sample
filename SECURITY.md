@@ -28,8 +28,8 @@ Helpful reports include:
 - The repository scan did not identify production authentication, payment, or secret-management code. Treat the project as public sample code unless future changes add sensitive surfaces.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - GitHub Actions runs the readiness, credential, and fixture-safety baseline
-  with a commit-pinned checkout action, read-only repository access, and a
-  bounded runtime.
+  with a commit-pinned checkout action, read-only repository access, a
+  credential-free checkout, and a bounded runtime.
 - Credential placeholders are tracked in `.env.example`; real values must stay
   out of git and follow `docs/credential-handling-policy.md`.
 - Readiness scans report only affected filenames, never matched credential,

@@ -20,6 +20,7 @@ CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 SCANNER_REDACTION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-readiness-scan-redaction.md"
 SCANNER_TEST_PLAN="$ROOT_DIR/docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md"
 SYMLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-12-tracked-symlink-guard.md"
+CHECKOUT_CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-checkout-credential-boundary.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -56,10 +57,19 @@ for path in \
   "docs/plans/2026-06-10-readiness-scan-redaction.md" \
   "docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md" \
   "docs/plans/2026-06-12-tracked-symlink-guard.md" \
+  "docs/plans/2026-06-12-checkout-credential-boundary.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
 done
+
+workflow_count=$(find "$ROOT_DIR/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')
+checkout_count=$(grep -Ec '^[[:space:]]*uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' "$CI_WORKFLOW" || true)
+credential_boundary_count=$(grep -Ec '^[[:space:]]*persist-credentials:[[:space:]]*false([[:space:]]|$)' "$CI_WORKFLOW" || true)
+if [ "$workflow_count" -ne 1 ] || [ "$checkout_count" -ne 1 ] || [ "$credential_boundary_count" -ne 1 ]; then
+  printf '%s\n' "GitHub Actions must keep one workflow with one pinned, credential-free checkout." >&2
+  exit 1
+fi
 
 for workflow_contract in \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
@@ -78,6 +88,12 @@ done
 
 if ! grep -Fq "Status: Completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
   printf '%s\n' "CI baseline plan must record completed make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$CHECKOUT_CREDENTIAL_PLAN" ||
+  ! grep -Fq "make check" "$CHECKOUT_CREDENTIAL_PLAN"; then
+  printf '%s\n' "Checkout credential boundary plan must record completed make check verification." >&2
   exit 1
 fi
 
@@ -108,7 +124,7 @@ for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key
 done
 
 tracked_sensitive=$(git -C "$ROOT_DIR" ls-files |
-  grep -Ev '(^|/)\.env\.example$|^docs/credential-handling-policy\.md$|^docs/plans/2026-06-09-credential-placeholder-policy\.md$' |
+  grep -Ev '(^|/)\.env\.example$|^docs/credential-handling-policy\.md$|^docs/plans/2026-06-09-credential-placeholder-policy\.md$|^docs/plans/2026-06-12-checkout-credential-boundary\.md$' |
   grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2

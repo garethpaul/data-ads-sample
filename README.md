@@ -12,6 +12,10 @@ repository is prepared for a future credential-safe sample with explicit setup,
 safe fixture data, and a local verification command added alongside the first
 implementation.
 
+The readiness guard rejects orphan runtime source files until a complete
+implementation transition adds the chosen runtime manifest, setup, tests,
+credential handling, fixture provenance, and updated repository contracts.
+
 This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: no dominant source language detected.
 
 ## Repository Contents

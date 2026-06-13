@@ -2,7 +2,7 @@
 title: Tracked Runtime Source Guard
 type: fix
 date: 2026-06-13
-status: planned
+status: completed
 ---
 
 # Tracked Runtime Source Guard
@@ -83,6 +83,24 @@ the first real sample.
   mutation must fail.
 - Confirm no runtime manifest, dependency, API implementation, submodule,
   credential, or private data is added by this change.
+
+## Verification Results
+
+- `tests/check-baseline.sh`, repository `make check`, and the absolute-path
+  `make check` wrapper from `/tmp` passed the clean repository plus generic
+  secret, bearer-token, account-context, symlink, gitlink, Python, and
+  JavaScript rejection cases.
+- Python and JavaScript runtime-source diagnostics contained only tracked paths
+  and did not reproduce fixture contents.
+- Plan-aware review found no actionable findings; the check remains scoped to
+  tracked application source extensions and leaves shell verification
+  infrastructure allowed.
+- Shell syntax, whitespace, exact-path, and explicit secret scans passed.
+- Eight isolated hostile mutations covering extension matching, shell-script
+  overreach, content disclosure, both runtime fixtures, invocation contracts,
+  documentation drift, and completed-plan status were rejected.
+- No runtime manifest, dependency, Ads API/GNIP implementation, submodule,
+  credential, private fixture, or generated artifact was added.
 
 ## Prioritized Follow-Ups
 

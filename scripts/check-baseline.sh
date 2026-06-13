@@ -22,6 +22,7 @@ SCANNER_TEST_PLAN="$ROOT_DIR/docs/plans/2026-06-12-001-test-readiness-scanner-re
 SYMLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-12-tracked-symlink-guard.md"
 CHECKOUT_CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-checkout-credential-boundary.md"
 GITLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-gitlink-guard.md"
+RUNTIME_SOURCE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-runtime-source-guard.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -60,6 +61,7 @@ for path in \
   "docs/plans/2026-06-12-tracked-symlink-guard.md" \
   "docs/plans/2026-06-12-checkout-credential-boundary.md" \
   "docs/plans/2026-06-13-tracked-gitlink-guard.md" \
+  "docs/plans/2026-06-13-tracked-runtime-source-guard.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -147,6 +149,15 @@ if [ -n "$tracked_gitlinks" ]; then
   exit 1
 fi
 
+tracked_runtime_sources=$(git -C "$ROOT_DIR" ls-files |
+  grep -Ei '\.(cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs)$' || true)
+if [ -n "$tracked_runtime_sources" ]; then
+  printf '%s\n%s\n' \
+    "Tracked runtime source files require a complete implementation transition:" \
+    "$tracked_runtime_sources" >&2
+  exit 1
+fi
+
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!docs/plans/**' \
@@ -206,12 +217,29 @@ fi
 if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_symlink_rejected" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_gitlink_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_tracked_runtime_source_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_tracked_runtime_source_rejected ' "$SCANNER_TEST")" -ne 2 ] ||
   [ "$(grep -c '^assert_tracked_gitlink_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
   ! grep -Fq "scanner output exposed the object ID" "$SCANNER_TEST" ||
   ! grep -Fq "Potential secret material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential Ads API, GNIP, or bearer token material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential populated Ads account context detected in:" "$SCANNER_TEST"; then
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
+  exit 1
+fi
+
+if ! grep -Fq "readiness guard rejects orphan runtime source files" "$README" ||
+  ! grep -Fq "Tracked application source files are rejected" "$SECURITY" ||
+  ! grep -Fq "Keep orphan runtime source files" "$VISION" ||
+  ! grep -Fq "Rejected tracked runtime source files" "$CHANGES"; then
+  printf '%s\n' "Project docs must record the documentation-only runtime source boundary." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$RUNTIME_SOURCE_PLAN" ||
+  ! grep -Fq "Eight isolated hostile mutations" "$RUNTIME_SOURCE_PLAN" ||
+  ! grep -Fq "No runtime manifest" "$RUNTIME_SOURCE_PLAN"; then
+  printf '%s\n' "Runtime source guard plan must record completed verification and no-runtime scope." >&2
   exit 1
 fi
 

@@ -114,6 +114,36 @@ assert_tracked_gitlink_rejected() {
   esac
 }
 
+assert_tracked_runtime_source_rejected() {
+  fixture_path=$1
+  fixture_content=$2
+
+  prepare_case
+  mkdir -p "$CASE_DIR/$(dirname -- "$fixture_path")"
+  printf '%s\n' "$fixture_content" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "$fixture_path: expected runtime source rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked runtime source files require a complete implementation transition:"*"$fixture_path"*) ;;
+    *)
+      printf '%s\n%s\n' "$fixture_path: expected diagnostic and fixture filename" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$fixture_content"*)
+      printf '%s\n' "$fixture_path: scanner output exposed source content" >&2
+      exit 1
+      ;;
+  esac
+}
+
 prepare_case
 "$CASE_DIR/scripts/check-baseline.sh" >/dev/null
 
@@ -140,5 +170,7 @@ assert_rejected_without_value \
 
 assert_tracked_symlink_rejected
 assert_tracked_gitlink_rejected
+assert_tracked_runtime_source_rejected "sample/client.py" "print('private account workflow')"
+assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
 
 printf '%s\n' "Readiness scanner regression tests passed."

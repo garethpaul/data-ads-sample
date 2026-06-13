@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Rejected unapproved tracked executable files while preserving the two
+  readiness scanner entry points.
 - Rejected tracked runtime source files while the repository remains
   documentation-only, with filename-redacted Python and JavaScript regressions.
 - Rejected tracked Git submodules and raw gitlinks before readiness content

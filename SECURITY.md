@@ -41,6 +41,8 @@ Helpful reports include:
 - Tracked application source files are rejected while the repository remains
   documentation-only; the first implementation must add its runtime, locked
   dependencies, tests, setup, and credential boundary together.
+- Tracked executable files are allowlisted to the two readiness scanner scripts
+  so extensionless runtime entry points cannot bypass the documentation-only boundary.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before

@@ -1,13 +1,13 @@
 ---
 title: Tracked Executable Mode Guard
 type: security
-status: planned
+status: completed
 date: 2026-06-13
 ---
 
 # Tracked Executable Mode Guard
 
-## Status: Planned
+## Status: Completed
 
 ## Problem Frame
 
@@ -60,3 +60,22 @@ policy transition.
 - Git mode checks cover tracked executability, not arbitrary binary content in
   non-executable files; the repository remains documentation-only and may need
   a separate binary-content boundary later.
+
+## Work Completed
+
+- Added a Git-index mode guard that allows executable mode only for the source
+  and regression readiness scanners.
+- Added an isolated extensionless executable fixture with path-only diagnostic,
+  content-redaction, and object-ID-redaction assertions.
+- Synchronized repository documentation and completed-plan contracts.
+
+## Verification Completed
+
+- `tests/check-baseline.sh`, `make check`, and the absolute-path Make invocation
+  from `/tmp` passed.
+- `sh -n` passed for both changed shell scripts, and `git diff --check` passed.
+- Eight isolated hostile mutations were rejected across mode matching,
+  allowlist widening, diagnostic redaction, fixture presence, documentation,
+  plan status, and verification evidence.
+- No runtime manifest, implementation, dependency, credential, private data,
+  submodule, symlink, or generated artifact was added.

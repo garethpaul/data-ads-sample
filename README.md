@@ -15,6 +15,8 @@ implementation.
 The readiness guard rejects orphan runtime source files until a complete
 implementation transition adds the chosen runtime manifest, setup, tests,
 credential handling, fixture provenance, and updated repository contracts.
+It also rejects unapproved tracked executable files; only the two readiness
+scanner scripts retain executable mode while the repository is documentation-only.
 
 This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: no dominant source language detected.
 

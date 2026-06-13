@@ -17,6 +17,7 @@ The current focus is:
 
 Priority:
 
+- Keep tracked executable modes limited to approved readiness scripts
 - Establish basic project direction before adding code
 - Keep root verification gates aligned with the documentation-only baseline
 - Keep readiness tool prerequisites explicit before the source guard runs

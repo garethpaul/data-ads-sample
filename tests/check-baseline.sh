@@ -114,6 +114,35 @@ assert_tracked_gitlink_rejected() {
   esac
 }
 
+assert_unapproved_executable_rejected() {
+  prepare_case
+  fixture_content='run private Ads workflow'
+  printf '%s\n' "$fixture_content" >"$CASE_DIR/launch-sample"
+  chmod 755 "$CASE_DIR/launch-sample"
+  git -C "$CASE_DIR" add launch-sample
+  fixture_object=$(git -C "$CASE_DIR" rev-parse :launch-sample)
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "tracked executable: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked executable files require an explicit readiness allowlist:"*"launch-sample"*) ;;
+    *)
+      printf '%s\n%s\n' "tracked executable: expected diagnostic and indexed path" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$fixture_content"*|*"$fixture_object"*)
+      printf '%s\n' "tracked executable: scanner output exposed content or object ID" >&2
+      exit 1
+      ;;
+  esac
+}
+
 assert_tracked_runtime_source_rejected() {
   fixture_path=$1
   fixture_content=$2
@@ -170,6 +199,7 @@ assert_rejected_without_value \
 
 assert_tracked_symlink_rejected
 assert_tracked_gitlink_rejected
+assert_unapproved_executable_rejected
 assert_tracked_runtime_source_rejected "sample/client.py" "print('private account workflow')"
 assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
 

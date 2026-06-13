@@ -23,6 +23,7 @@ SYMLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-12-tracked-symlink-guard.md"
 CHECKOUT_CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-checkout-credential-boundary.md"
 GITLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-gitlink-guard.md"
 RUNTIME_SOURCE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-runtime-source-guard.md"
+EXECUTABLE_MODE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-executable-mode-guard.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -62,6 +63,7 @@ for path in \
   "docs/plans/2026-06-12-checkout-credential-boundary.md" \
   "docs/plans/2026-06-13-tracked-gitlink-guard.md" \
   "docs/plans/2026-06-13-tracked-runtime-source-guard.md" \
+  "docs/plans/2026-06-13-tracked-executable-mode-guard.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -149,6 +151,24 @@ if [ -n "$tracked_gitlinks" ]; then
   exit 1
 fi
 
+tracked_executables=$(git -C "$ROOT_DIR" ls-files -s |
+  awk '$1 == "100755" {
+    path = substr($0, index($0, "\t") + 1)
+    if (path != "scripts/check-baseline.sh" && path != "tests/check-baseline.sh") print path
+  }')
+if [ -n "$tracked_executables" ]; then
+  printf '%s\n%s\n' \
+    "Tracked executable files require an explicit readiness allowlist:" \
+    "$tracked_executables" >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc '$1 == "100755"' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
+  [ "$(grep -Fc 'if (path != "scripts/check-baseline.sh" && path != "tests/check-baseline.sh") print path' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ]; then
+  printf '%s\n' "Tracked executable guard must keep the exact two-script allowlist." >&2
+  exit 1
+fi
+
 tracked_runtime_sources=$(git -C "$ROOT_DIR" ls-files |
   grep -Ei '\.(cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs)$' || true)
 if [ -n "$tracked_runtime_sources" ]; then
@@ -217,6 +237,9 @@ fi
 if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_symlink_rejected" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_gitlink_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_unapproved_executable_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_unapproved_executable_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
+  ! grep -Fq '*"$fixture_content"*|*"$fixture_object"*)' "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_runtime_source_rejected" "$SCANNER_TEST" ||
   [ "$(grep -c '^assert_tracked_runtime_source_rejected ' "$SCANNER_TEST")" -ne 2 ] ||
   [ "$(grep -c '^assert_tracked_gitlink_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
@@ -227,6 +250,26 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
   exit 1
 fi
+
+if ! grep -Fq "unapproved tracked executable files" "$README" ||
+  ! grep -Fq "Tracked executable files are allowlisted" "$SECURITY" ||
+  ! grep -Fq "Keep tracked executable modes limited" "$VISION" ||
+  ! grep -Fq "Rejected unapproved tracked executable files" "$CHANGES"; then
+  printf '%s\n' "Project docs must record the tracked executable-mode boundary." >&2
+  exit 1
+fi
+
+for plan_contract in \
+  'status: completed' \
+  '## Status: Completed' \
+  '## Work Completed' \
+  '## Verification Completed' \
+  'Eight isolated hostile mutations were rejected'; do
+  if ! grep -Fq "$plan_contract" "$EXECUTABLE_MODE_PLAN"; then
+    printf '%s\n' "Tracked executable-mode plan must keep completed evidence: $plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "readiness guard rejects orphan runtime source files" "$README" ||
   ! grep -Fq "Tracked application source files are rejected" "$SECURITY" ||

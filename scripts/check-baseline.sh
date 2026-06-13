@@ -21,6 +21,7 @@ SCANNER_REDACTION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-readiness-scan-redaction
 SCANNER_TEST_PLAN="$ROOT_DIR/docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md"
 SYMLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-12-tracked-symlink-guard.md"
 CHECKOUT_CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-checkout-credential-boundary.md"
+GITLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-gitlink-guard.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -58,6 +59,7 @@ for path in \
   "docs/plans/2026-06-12-001-test-readiness-scanner-regressions-plan.md" \
   "docs/plans/2026-06-12-tracked-symlink-guard.md" \
   "docs/plans/2026-06-12-checkout-credential-boundary.md" \
+  "docs/plans/2026-06-13-tracked-gitlink-guard.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -138,6 +140,13 @@ if [ -n "$tracked_symlinks" ]; then
   exit 1
 fi
 
+tracked_gitlinks=$(git -C "$ROOT_DIR" ls-files -s |
+  awk '$1 == "160000" { print substr($0, index($0, "\t") + 1) }')
+if [ -n "$tracked_gitlinks" ]; then
+  printf '%s\n%s\n' "Tracked Git submodules are not allowed:" "$tracked_gitlinks" >&2
+  exit 1
+fi
+
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!docs/plans/**' \
@@ -196,6 +205,9 @@ fi
 
 if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_symlink_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_tracked_gitlink_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_tracked_gitlink_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
+  ! grep -Fq "scanner output exposed the object ID" "$SCANNER_TEST" ||
   ! grep -Fq "Potential secret material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential Ads API, GNIP, or bearer token material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential populated Ads account context detected in:" "$SCANNER_TEST"; then
@@ -203,9 +215,25 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   exit 1
 fi
 
+if ! grep -Fq "tracked symlinks and Git submodules" "$README" ||
+  ! grep -Fq "Tracked Git submodules and raw gitlinks are rejected" "$SECURITY" ||
+  ! grep -Fq "Keep tracked Git submodules and gitlinks" "$VISION" ||
+  ! grep -Fq "Rejected tracked Git submodules and raw gitlinks" "$CHANGES"; then
+  printf '%s\n' "Project docs must record the tracked gitlink readiness boundary." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$SYMLINK_GUARD_PLAN" ||
   ! grep -Fq "Tracked Symlink Guard" "$SYMLINK_GUARD_PLAN"; then
   printf '%s\n' "Tracked symlink guard plan must remain completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$GITLINK_GUARD_PLAN" ||
+  ! grep -Fq "Ten hostile mutations were rejected" "$GITLINK_GUARD_PLAN" ||
+  ! grep -Fq 'make -f /absolute/path/to/Makefile check' "$GITLINK_GUARD_PLAN" ||
+  ! grep -Fq "No runtime manifest" "$GITLINK_GUARD_PLAN"; then
+  printf '%s\n' "Tracked gitlink guard plan must record completed verification and no-runtime scope." >&2
   exit 1
 fi
 

@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Rejected tracked Git submodules and raw gitlinks before readiness content
+  scans, with a network-free redaction regression for indexed object IDs.
+
 ## 2026-06-12
 
 - Stopped the hosted readiness checkout from persisting its credential and

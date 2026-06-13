@@ -86,6 +86,34 @@ assert_tracked_symlink_rejected() {
   esac
 }
 
+assert_tracked_gitlink_rejected() {
+  prepare_case
+  gitlink_object=$(printf '%s' 'external repository object' |
+    git -C "$CASE_DIR" hash-object -w --stdin)
+  git -C "$CASE_DIR" update-index --add \
+    --cacheinfo "160000,$gitlink_object,external-sample"
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "tracked gitlink: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked Git submodules are not allowed:"*"external-sample"*) ;;
+    *)
+      printf '%s\n%s\n' "tracked gitlink: expected diagnostic and indexed path" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$gitlink_object"*)
+      printf '%s\n' "tracked gitlink: scanner output exposed the object ID" >&2
+      exit 1
+      ;;
+  esac
+}
+
 prepare_case
 "$CASE_DIR/scripts/check-baseline.sh" >/dev/null
 
@@ -111,5 +139,6 @@ assert_rejected_without_value \
   "Potential populated Ads account context detected in:"
 
 assert_tracked_symlink_rejected
+assert_tracked_gitlink_rejected
 
 printf '%s\n' "Readiness scanner regression tests passed."

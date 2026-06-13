@@ -47,6 +47,8 @@ Contribution rules:
   explicit safe fixtures.
 - Keep tracked symlinks out of the repository so credential and fixture checks
   remain bounded to reviewed files.
+- Keep tracked Git submodules and gitlinks out of the documentation-only
+  repository so external content cannot bypass readiness review.
 - Require safe fixture provenance before committing sample Ads/GNIP data.
 - Keep fixture provenance records with the fixture change by using
   `docs/fixture-provenance-template.md` or equivalent plan fields.

@@ -36,6 +36,8 @@ Helpful reports include:
   account ID, or customer ID values, to avoid copying secrets into CI logs.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
+- Tracked Git submodules and raw gitlinks are rejected so external repository
+  content cannot sit outside the readiness scanner's reviewed file boundary.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before

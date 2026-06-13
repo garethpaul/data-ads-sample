@@ -68,10 +68,10 @@ scripts/check-baseline.sh
 
 The current guard verifies that this documentation-only sample has no runtime
 manifest yet, ignores likely local credential and private-export paths, scans
-for obvious token material, rejects tracked symlinks that could escape the
-repository scan boundary, and documents the required follow-up when the first
+for obvious token material, rejects tracked symlinks and Git submodules that
+could escape the repository scan boundary, and documents the required follow-up when the first
 real implementation is added. `make test` runs isolated mutation tests for the
-scanner's secret, bearer-token, account-context, tracked-symlink, and
+scanner's secret, bearer-token, account-context, tracked-symlink, gitlink, and
 filename-only redaction behavior. No application runtime tests exist until
 runnable Ads API/GNIP code is added; `make build` continues to run the readiness
 guard.
@@ -134,6 +134,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the isolated scanner behavior and redaction test contract.
 - See `docs/plans/2026-06-12-tracked-symlink-guard.md` for the rule that keeps
   readiness scans inside the tracked repository tree.
+- See `docs/plans/2026-06-13-tracked-gitlink-guard.md` for the rule that keeps
+  external submodule content outside this documentation-only repository.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

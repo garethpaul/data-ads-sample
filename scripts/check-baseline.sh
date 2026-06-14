@@ -24,6 +24,7 @@ CHECKOUT_CREDENTIAL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-checkout-credential-bo
 GITLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-gitlink-guard.md"
 RUNTIME_SOURCE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-runtime-source-guard.md"
 EXECUTABLE_MODE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-executable-mode-guard.md"
+MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -64,6 +65,7 @@ for path in \
   "docs/plans/2026-06-13-tracked-gitlink-guard.md" \
   "docs/plans/2026-06-13-tracked-runtime-source-guard.md" \
   "docs/plans/2026-06-13-tracked-executable-mode-guard.md" \
+  "docs/plans/2026-06-14-make-root-override-protection.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -331,6 +333,23 @@ fi
 
 if ! grep -Fq "verify: lint test build" "$ROOT_DIR/Makefile"; then
   printf '%s\n' "Makefile must expose a combined verify gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE" || \
+   ! grep -Fq '$(ROOT)scripts/check-baseline.sh' "$MAKEFILE" || \
+   ! grep -Fq '$(ROOT)tests/check-baseline.sh' "$MAKEFILE"; then
+  printf '%s\n' "Makefile verification must protect and resolve both scanners from the loaded Makefile." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "## Status: Completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq 'make ROOT=/tmp check' "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "four Make gates" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "external working directory" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "Four isolated hostile mutations were rejected" "$MAKE_ROOT_PROTECTION_PLAN"; then
+  printf '%s\n' "Make root protection plan must record completed hostile-override and external verification." >&2
   exit 1
 fi
 

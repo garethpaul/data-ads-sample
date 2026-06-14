@@ -1,13 +1,13 @@
 ---
 title: Make Root Override Protection
 type: reliability
-status: in_progress
+status: completed
 date: 2026-06-14
 ---
 
 # Make Root Override Protection
 
-## Status: In Progress
+## Status: Completed
 
 ## Problem Frame
 
@@ -31,4 +31,17 @@ assignment can redirect both readiness scanners outside the checkout.
 
 ## Verification
 
-Pending implementation and validation.
+- `sh -n scripts/check-baseline.sh` and `sh -n tests/check-baseline.sh` passed.
+- `tests/check-baseline.sh` passed the isolated readiness scanner regression
+  suite.
+- All four Make gates passed through `make lint`, `make test`, `make build`,
+  and `make check`.
+- `make ROOT=/tmp check` passed and still executed both repository scanners.
+- The full gate passed from `/tmp` through the absolute Makefile path, covering
+  the external working directory.
+- Four isolated hostile mutations were rejected: overrideable root, missing
+  plan, reopened plan, and missing verification evidence.
+- `git diff --check`, intended-path review, artifact inspection, and the
+  changed-line secret scan passed.
+- No runtime manifest, implementation, dependency, credential, private data,
+  fixture, symlink, gitlink, or generated artifact was added.

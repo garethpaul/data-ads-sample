@@ -25,6 +25,7 @@ GITLINK_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-gitlink-guard.md"
 RUNTIME_SOURCE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-runtime-source-guard.md"
 EXECUTABLE_MODE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-executable-mode-guard.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
+PLAN_CREDENTIAL_SCAN_PLAN="$ROOT_DIR/docs/plans/2026-06-15-plan-sensitive-value-scan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -66,6 +67,7 @@ for path in \
   "docs/plans/2026-06-13-tracked-runtime-source-guard.md" \
   "docs/plans/2026-06-13-tracked-executable-mode-guard.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
+  "docs/plans/2026-06-15-plan-sensitive-value-scan.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -182,7 +184,6 @@ fi
 
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
-  --glob '!docs/plans/**' \
   --glob '!scripts/check-baseline.sh' \
   'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}' \
   "$ROOT_DIR" || true)
@@ -193,7 +194,6 @@ fi
 
 api_secret_files=$(rg -l --hidden -i \
   --glob '!**/.git/**' \
-  --glob '!docs/plans/**' \
   --glob '!scripts/check-baseline.sh' \
   'bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(twitter|gnip|ads)[A-Za-z0-9_ -]{0,32}(secret|token|key)[A-Za-z0-9_ -]{0,16}[:=][[:space:]]*[A-Za-z0-9_./+=-]{20,}' \
   "$ROOT_DIR" || true)
@@ -204,7 +204,6 @@ fi
 
 account_context_files=$(rg -l --hidden -i \
 	--glob '!**/.git/**' \
-	--glob '!docs/plans/**' \
 	--glob '!scripts/check-baseline.sh' \
 	"(ads[_ -]?)?(account|customer)[_ -]?id[\"']?[[:space:]]*[:=][[:space:]]*[\"']?[0-9]{5,}" \
 	"$ROOT_DIR" || true)
@@ -250,6 +249,32 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   ! grep -Fq "Potential Ads API, GNIP, or bearer token material detected in:" "$SCANNER_TEST" ||
   ! grep -Fq "Potential populated Ads account context detected in:" "$SCANNER_TEST"; then
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc -- "--glob '!docs/plans/**'" "$ROOT_DIR/scripts/check-baseline.sh")" -ne 1 ] || \
+  ! grep -Fq 'fixture_path=${4:-mutation.txt}' "$SCANNER_TEST" || \
+  ! grep -Fq 'docs/plans/mutation-one.md' "$SCANNER_TEST" || \
+  ! grep -Fq 'docs/plans/mutation-two.md' "$SCANNER_TEST" || \
+  ! grep -Fq 'docs/plans/mutation-three.md' "$SCANNER_TEST"; then
+  printf '%s\n' "Readiness scans must cover credential and account values in plan documents." >&2
+  exit 1
+fi
+
+if [ ! -f "$PLAN_CREDENTIAL_SCAN_PLAN" ] || \
+  ! grep -Fq "status: completed" "$PLAN_CREDENTIAL_SCAN_PLAN" || \
+  ! grep -Fq "## Status: Completed" "$PLAN_CREDENTIAL_SCAN_PLAN" || \
+  ! grep -Fq "make check" "$PLAN_CREDENTIAL_SCAN_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$PLAN_CREDENTIAL_SCAN_PLAN"; then
+  printf '%s\n' "Plan credential scan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "engineering plans are scanned for credential and account values" "$README" || \
+  ! grep -Fq "Tracked engineering plans receive the same credential and account-value scans" "$SECURITY" || \
+  ! grep -Fq "Scan tracked engineering plans for credential and account values" "$VISION" || \
+  ! grep -Fq "Extended credential and account-value scans to tracked engineering plans" "$CHANGES"; then
+  printf '%s\n' "Repository guidance must document plan credential scanning." >&2
   exit 1
 fi
 

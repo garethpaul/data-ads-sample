@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Extended credential and account-value scans to tracked engineering plans and
+  added filename-redacted plan fixture regressions.
+
 ## 2026-06-13
 
 - Rejected unapproved tracked executable files while preserving the two

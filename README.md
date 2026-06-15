@@ -86,6 +86,8 @@ script exits with an explicit prerequisite message when it is missing.
 Credential and account-context findings report filenames without echoing
 matched values, so a failed local or hosted check does not copy secrets into
 terminal or CI logs.
+Tracked engineering plans are scanned for credential and account values under
+the same filename-only redaction boundary as other repository content.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only

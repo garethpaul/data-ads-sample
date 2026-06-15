@@ -34,6 +34,8 @@ Helpful reports include:
   out of git and follow `docs/credential-handling-policy.md`.
 - Readiness scans report only affected filenames, never matched credential,
   account ID, or customer ID values, to avoid copying secrets into CI logs.
+- Tracked engineering plans receive the same credential and account-value scans
+  as other repository content; plans are not a secret-storage exception.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
 - Tracked Git submodules and raw gitlinks are rejected so external repository

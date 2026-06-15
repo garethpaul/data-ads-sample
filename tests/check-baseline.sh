@@ -33,10 +33,12 @@ assert_rejected_without_value() {
   label=$1
   fixture_content=$2
   expected_message=$3
+  fixture_path=${4:-mutation.txt}
 
   prepare_case
-  printf '%s\n' "$fixture_content" >"$CASE_DIR/mutation.txt"
-  git -C "$CASE_DIR" add mutation.txt
+  mkdir -p "$CASE_DIR/$(dirname -- "$fixture_path")"
+  printf '%s\n' "$fixture_content" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
 
   if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
     printf '%s\n' "$label: expected scanner rejection" >&2
@@ -44,7 +46,7 @@ assert_rejected_without_value() {
   fi
 
   case $output in
-    *"$expected_message"*"mutation.txt"*) ;;
+    *"$expected_message"*"$fixture_path"*) ;;
     *)
       printf '%s\n%s\n' "$label: expected diagnostic and fixture filename" "$output" >&2
       exit 1
@@ -182,6 +184,11 @@ assert_rejected_without_value \
   "generic secret" \
   "$generic_secret" \
   "Potential secret material detected in:"
+assert_rejected_without_value \
+  "generic secret in plan" \
+  "$generic_secret" \
+  "Potential secret material detected in:" \
+  "docs/plans/mutation-one.md"
 
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
@@ -189,6 +196,11 @@ assert_rejected_without_value \
   "Ads bearer token" \
   "$bearer_token" \
   "Potential Ads API, GNIP, or bearer token material detected in:"
+assert_rejected_without_value \
+  "Ads bearer token in plan" \
+  "$bearer_token" \
+  "Potential Ads API, GNIP, or bearer token material detected in:" \
+  "docs/plans/mutation-two.md"
 
 account_context='ADS_ACCOUNT_ID='
 account_context="${account_context}123456789"
@@ -196,6 +208,11 @@ assert_rejected_without_value \
   "Ads account context" \
   "$account_context" \
   "Potential populated Ads account context detected in:"
+assert_rejected_without_value \
+  "Ads account context in plan" \
+  "$account_context" \
+  "Potential populated Ads account context detected in:" \
+  "docs/plans/mutation-three.md"
 
 assert_tracked_symlink_rejected
 assert_tracked_gitlink_rejected

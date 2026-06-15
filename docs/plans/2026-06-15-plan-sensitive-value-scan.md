@@ -1,6 +1,6 @@
 ---
 title: Plan Credential Scan
-status: in_progress
+status: completed
 date: 2026-06-15
 ---
 
@@ -42,6 +42,21 @@ tracked engineering plan can bypass the repository gate.
   documentation drift, and stale plan evidence
 - Exact diff, generated-artifact, whitespace, conflict-marker, and credential scans
 
-## Status: In Progress
+## Status: Completed
 
-Implementation and verification evidence will be recorded after the gates complete.
+## Work Completed
+
+- Removed the blanket `docs/plans/**` exclusions from all three sensitive-value
+  content scans while retaining the scanner-source exclusion.
+- Extended the redacted regression helper with caller-supplied fixture paths and
+  added generic-secret, bearer-token, and populated-account fixtures under
+  neutral plan filenames.
+- Added source, regression, completed-plan, and synchronized guidance contracts.
+
+## Verification Completed
+
+- `sh -n scripts/check-baseline.sh tests/check-baseline.sh` passed.
+- A clean isolated repository fixture passed all readiness scanner regressions.
+- Eight isolated hostile mutations were rejected across all three exclusions,
+  all three plan fixtures, repository guidance, and plan status.
+- Repository-root and external-directory `make check` both passed.

@@ -36,6 +36,8 @@ Helpful reports include:
   account ID, or customer ID values, to avoid copying secrets into CI logs.
 - Tracked engineering plans receive the same credential and account-value scans
   as other repository content; plans are not a secret-storage exception.
+- Fine-grained GitHub token values are covered by filename-redacted generic
+  secret scanning in ordinary tracked files and engineering plans.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
 - Tracked Git submodules and raw gitlinks are rejected so external repository

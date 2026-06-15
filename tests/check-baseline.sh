@@ -190,6 +190,18 @@ assert_rejected_without_value \
   "Potential secret material detected in:" \
   "docs/plans/mutation-one.md"
 
+fine_grained_token='github_pat_'
+fine_grained_token="${fine_grained_token}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+assert_rejected_without_value \
+  "fine-grained GitHub token" \
+  "$fine_grained_token" \
+  "Potential secret material detected in:"
+assert_rejected_without_value \
+  "fine-grained GitHub token in plan" \
+  "$fine_grained_token" \
+  "Potential secret material detected in:" \
+  "docs/plans/mutation-four.md"
+
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
 assert_rejected_without_value \

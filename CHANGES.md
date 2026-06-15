@@ -4,6 +4,7 @@
 
 - Extended credential and account-value scans to tracked engineering plans and
   added filename-redacted plan fixture regressions.
+- Extended filename-redacted generic secret scanning to fine-grained GitHub token values.
 
 ## 2026-06-13
 

@@ -1,6 +1,6 @@
 ---
 title: Fine-Grained GitHub Token Scan
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -91,8 +91,27 @@ and maintained credential guidance.
 - Do not change Ads/GNIP or account-ID expressions.
 - Do not add runtime code, package manifests, dependencies, or permissions.
 
-## Verification To Record
+## Status: Completed
 
-- Pre-fix acceptance and post-fix rejection of both synthetic fixtures.
-- Root/external gates and hostile mutation results.
-- Final diff, artifact, secret-pattern, and exact-head evidence.
+## Work Completed
+
+- Extended the existing filename-only generic secret expression with the
+  fine-grained GitHub token prefix and bounded value shape.
+- Added isolated ordinary-file and engineering-plan fixtures assembled at
+  runtime so the test source remains scanner-safe.
+- Strengthened the shared regression helper contract so diagnostics that echo a
+  matched value cannot silently return.
+- Synchronized maintained credential guidance without adding dependencies,
+  runtime code, manifests, or workflow changes.
+
+## Verification Completed
+
+- An isolated pre-fix tracked fixture proved the scanner accepted a synthetic
+  fine-grained GitHub token before implementation.
+- `sh -n` passed for both shell scripts, and the full readiness scanner
+  regression suite passed after implementation.
+- Six isolated hostile mutations were rejected for scanner-pattern removal,
+  ordinary-fixture removal, plan-fixture removal, redaction weakening, and
+  guidance weakening, plus completed-status rollback.
+- Root/external gates, final audits, and hosted exact-head state are recorded by
+  the shipping evidence for this branch.

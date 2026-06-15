@@ -26,6 +26,7 @@ RUNTIME_SOURCE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-runtime-source-guar
 EXECUTABLE_MODE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-executable-mode-guard.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 PLAN_CREDENTIAL_SCAN_PLAN="$ROOT_DIR/docs/plans/2026-06-15-plan-sensitive-value-scan.md"
+FINE_GRAINED_GITHUB_PLAN="$ROOT_DIR/docs/plans/2026-06-15-fine-grained-github-value-scan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -68,6 +69,7 @@ for path in \
   "docs/plans/2026-06-13-tracked-executable-mode-guard.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-15-plan-sensitive-value-scan.md" \
+  "docs/plans/2026-06-15-fine-grained-github-value-scan.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -185,7 +187,7 @@ fi
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!scripts/check-baseline.sh' \
-  'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}' \
+  'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}' \
   "$ROOT_DIR" || true)
 if [ -n "$secret_files" ]; then
 	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
@@ -258,6 +260,42 @@ if [ "$(grep -Fc -- "--glob '!docs/plans/**'" "$ROOT_DIR/scripts/check-baseline.
   ! grep -Fq 'docs/plans/mutation-two.md' "$SCANNER_TEST" || \
   ! grep -Fq 'docs/plans/mutation-three.md' "$SCANNER_TEST"; then
   printf '%s\n' "Readiness scans must cover credential and account values in plan documents." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'github_pat_[A-Za-z0-9_]{30,}' "$ROOT_DIR/scripts/check-baseline.sh" || \
+  ! grep -Fq "fine_grained_token='github_pat_'" "$SCANNER_TEST" || \
+  [ "$(grep -Ec '^[[:space:]]*"fine-grained GitHub token"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  [ "$(grep -Ec '^[[:space:]]*"fine-grained GitHub token in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  ! grep -Fq 'docs/plans/mutation-four.md' "$SCANNER_TEST"; then
+  printf '%s\n' "Readiness scans must cover fine-grained GitHub tokens in ordinary files and plans." >&2
+  exit 1
+fi
+
+scanner_rejection_helper=$(awk '
+  /^assert_rejected_without_value\(\)/ { capture = 1 }
+  capture && /^assert_tracked_symlink_rejected\(\)/ { exit }
+  capture { print }
+' "$SCANNER_TEST")
+if ! printf '%s\n' "$scanner_rejection_helper" | grep -Fq '*"$fixture_content"*)'; then
+  printf '%s\n' "Scanner regression helper must reject diagnostics that reproduce matched values." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Generic secret scans include modern fine-grained GitHub token values" "$README" || \
+  ! grep -Fq "Fine-grained GitHub token values are covered by filename-redacted generic" "$SECURITY" || \
+  ! grep -Fq "Scan ordinary tracked files and engineering plans for fine-grained GitHub token values" "$VISION" || \
+  ! grep -Fq "Extended filename-redacted generic secret scanning to fine-grained GitHub token values" "$CHANGES"; then
+  printf '%s\n' "Repository guidance must document fine-grained GitHub token scanning." >&2
+  exit 1
+fi
+
+if [ ! -f "$FINE_GRAINED_GITHUB_PLAN" ] || \
+  ! grep -Fq "status: completed" "$FINE_GRAINED_GITHUB_PLAN" || \
+  ! grep -Fq "## Status: Completed" "$FINE_GRAINED_GITHUB_PLAN" || \
+  ! grep -Fq "make check" "$FINE_GRAINED_GITHUB_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$FINE_GRAINED_GITHUB_PLAN"; then
+  printf '%s\n' "Fine-grained GitHub token scan plan must record completed verification." >&2
   exit 1
 fi
 

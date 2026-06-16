@@ -2,6 +2,7 @@
 
 ## 2026-06-16
 
+- Extended filename-redacted generic secret scanning to GitLab personal access token values.
 - Extended filename-redacted generic secret scanning to temporary AWS session access keys.
 
 ## 2026-06-15

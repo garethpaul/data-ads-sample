@@ -1,6 +1,6 @@
 # GitLab Personal Access Token Scan
 
-## Status: In Progress
+## Status: Completed
 
 ## Context
 
@@ -51,3 +51,15 @@ access token values in all tracked repository content, including
 No runnable Ads client exists in this repository. Verification covers the
 tracked-content readiness boundary only and does not claim comprehensive
 secret scanning or provider-side token validation.
+
+## Verification Results
+
+- `sh -n scripts/check-baseline.sh` and `sh -n tests/check-baseline.sh` passed.
+- The scanner regression suite passed with ordinary-file and engineering-plan
+  GitLab PAT fixtures while keeping diagnostics filename-only.
+- Six isolated hostile mutations were rejected: the runtime pattern, each
+  regression case, the redaction helper, maintained guidance, and completed
+  plan status.
+- Repository-root and external-directory `make check` passed the complete
+  documentation-readiness baseline.
+- This focused pattern extension does not claim comprehensive secret scanning.

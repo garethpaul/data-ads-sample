@@ -28,6 +28,7 @@ MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-pr
 PLAN_CREDENTIAL_SCAN_PLAN="$ROOT_DIR/docs/plans/2026-06-15-plan-sensitive-value-scan.md"
 FINE_GRAINED_GITHUB_PLAN="$ROOT_DIR/docs/plans/2026-06-15-fine-grained-github-value-scan.md"
 AWS_SESSION_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-16-aws-session-access-key-scan.md"
+GITLAB_TOKEN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-gitlab-pat-value-scan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -72,6 +73,7 @@ for path in \
   "docs/plans/2026-06-15-plan-sensitive-value-scan.md" \
   "docs/plans/2026-06-15-fine-grained-github-value-scan.md" \
   "docs/plans/2026-06-16-aws-session-access-key-scan.md" \
+  "docs/plans/2026-06-16-gitlab-pat-value-scan.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -189,7 +191,7 @@ fi
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!scripts/check-baseline.sh' \
-  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}' \
+  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}|glpat-[A-Za-z0-9_-]{20,}' \
   "$ROOT_DIR" || true)
 if [ -n "$secret_files" ]; then
 	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
@@ -283,6 +285,15 @@ if ! grep -Fq '(AKIA|ASIA)[0-9A-Z]{16}' "$ROOT_DIR/scripts/check-baseline.sh" ||
   exit 1
 fi
 
+if [ "$(grep -Fc 'glpat-[A-Za-z0-9_-]{20,}' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] || \
+  ! grep -Fq "gitlab_token='glpat-'" "$SCANNER_TEST" || \
+  [ "$(grep -Ec '^[[:space:]]*"GitLab personal access token"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  [ "$(grep -Ec '^[[:space:]]*"GitLab personal access token in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  ! grep -Fq 'docs/plans/mutation-six.md' "$SCANNER_TEST"; then
+  printf '%s\n' "Readiness scans must cover GitLab personal access tokens in ordinary files and plans." >&2
+  exit 1
+fi
+
 scanner_rejection_helper=$(awk '
   /^assert_rejected_without_value\(\)/ { capture = 1 }
   capture && /^assert_tracked_symlink_rejected\(\)/ { exit }
@@ -307,6 +318,24 @@ if ! grep -Fq "Generic secret scans cover temporary AWS session access keys" "$R
   ! grep -Fq "Extended filename-redacted generic secret scanning to temporary AWS session access keys" "$CHANGES" || \
   ! grep -Fq "Temporary AWS session access-key identifiers are secret material" "$CREDENTIAL_POLICY"; then
   printf '%s\n' "Repository guidance must document temporary AWS session access-key scanning." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Generic secret scans cover GitLab personal access token values" "$README" || \
+  ! grep -Fq "GitLab personal access token values are covered by filename-redacted generic" "$SECURITY" || \
+  ! grep -Fq "Scan ordinary tracked files and engineering plans for GitLab personal access token values" "$VISION" || \
+  ! grep -Fq "Extended filename-redacted generic secret scanning to GitLab personal access token values" "$CHANGES" || \
+  ! grep -Fq "GitLab personal access tokens are secret material" "$CREDENTIAL_POLICY"; then
+  printf '%s\n' "Repository guidance must document GitLab personal access token scanning." >&2
+  exit 1
+fi
+
+if [ ! -f "$GITLAB_TOKEN_PLAN" ] || \
+  ! grep -Fq "## Status: Completed" "$GITLAB_TOKEN_PLAN" || \
+  ! grep -Fq "make check" "$GITLAB_TOKEN_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$GITLAB_TOKEN_PLAN" || \
+  ! grep -Fq "does not claim comprehensive" "$GITLAB_TOKEN_PLAN"; then
+  printf '%s\n' "GitLab personal access token scan plan must record completed verification." >&2
   exit 1
 fi
 

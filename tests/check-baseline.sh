@@ -214,6 +214,18 @@ assert_rejected_without_value \
   "Potential secret material detected in:" \
   "docs/plans/mutation-five.md"
 
+gitlab_token='glpat-'
+gitlab_token="${gitlab_token}abcdefghijklmnopqrstuvwxyz"
+assert_rejected_without_value \
+  "GitLab personal access token" \
+  "$gitlab_token" \
+  "Potential secret material detected in:"
+assert_rejected_without_value \
+  "GitLab personal access token in plan" \
+  "$gitlab_token" \
+  "Potential secret material detected in:" \
+  "docs/plans/mutation-six.md"
+
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
 assert_rejected_without_value \

@@ -90,6 +90,8 @@ Tracked engineering plans are scanned for credential and account values under
 the same filename-only redaction boundary as other repository content.
 Generic secret scans include modern fine-grained GitHub token values while
 keeping diagnostics limited to affected filenames.
+Generic secret scans cover temporary AWS session access keys under the same
+filename-only diagnostic boundary.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only

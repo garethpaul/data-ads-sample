@@ -202,6 +202,18 @@ assert_rejected_without_value \
   "Potential secret material detected in:" \
   "docs/plans/mutation-four.md"
 
+aws_session_key='ASIA'
+aws_session_key="${aws_session_key}0123456789ABCDEF"
+assert_rejected_without_value \
+  "AWS session access key" \
+  "$aws_session_key" \
+  "Potential secret material detected in:"
+assert_rejected_without_value \
+  "AWS session access key in plan" \
+  "$aws_session_key" \
+  "Potential secret material detected in:" \
+  "docs/plans/mutation-five.md"
+
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
 assert_rejected_without_value \

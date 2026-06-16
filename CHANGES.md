@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-16
+
+- Extended filename-redacted generic secret scanning to temporary AWS session access keys.
+
 ## 2026-06-15
 
 - Extended credential and account-value scans to tracked engineering plans and

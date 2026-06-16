@@ -27,6 +27,7 @@ EXECUTABLE_MODE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-tracked-executable-mode-gu
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 PLAN_CREDENTIAL_SCAN_PLAN="$ROOT_DIR/docs/plans/2026-06-15-plan-sensitive-value-scan.md"
 FINE_GRAINED_GITHUB_PLAN="$ROOT_DIR/docs/plans/2026-06-15-fine-grained-github-value-scan.md"
+AWS_SESSION_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-16-aws-session-access-key-scan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -70,6 +71,7 @@ for path in \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-15-plan-sensitive-value-scan.md" \
   "docs/plans/2026-06-15-fine-grained-github-value-scan.md" \
+  "docs/plans/2026-06-16-aws-session-access-key-scan.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -187,7 +189,7 @@ fi
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!scripts/check-baseline.sh' \
-  'AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}' \
+  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}' \
   "$ROOT_DIR" || true)
 if [ -n "$secret_files" ]; then
 	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
@@ -272,6 +274,15 @@ if ! grep -Fq 'github_pat_[A-Za-z0-9_]{30,}' "$ROOT_DIR/scripts/check-baseline.s
   exit 1
 fi
 
+if ! grep -Fq '(AKIA|ASIA)[0-9A-Z]{16}' "$ROOT_DIR/scripts/check-baseline.sh" || \
+  ! grep -Fq "aws_session_key='ASIA'" "$SCANNER_TEST" || \
+  [ "$(grep -Ec '^[[:space:]]*"AWS session access key"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  [ "$(grep -Ec '^[[:space:]]*"AWS session access key in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  ! grep -Fq 'docs/plans/mutation-five.md' "$SCANNER_TEST"; then
+  printf '%s\n' "Readiness scans must cover AWS session access keys in ordinary files and plans." >&2
+  exit 1
+fi
+
 scanner_rejection_helper=$(awk '
   /^assert_rejected_without_value\(\)/ { capture = 1 }
   capture && /^assert_tracked_symlink_rejected\(\)/ { exit }
@@ -287,6 +298,24 @@ if ! grep -Fq "Generic secret scans include modern fine-grained GitHub token val
   ! grep -Fq "Scan ordinary tracked files and engineering plans for fine-grained GitHub token values" "$VISION" || \
   ! grep -Fq "Extended filename-redacted generic secret scanning to fine-grained GitHub token values" "$CHANGES"; then
   printf '%s\n' "Repository guidance must document fine-grained GitHub token scanning." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Generic secret scans cover temporary AWS session access keys" "$README" || \
+  ! grep -Fq "Temporary AWS session access-key identifiers are covered by filename-redacted generic" "$SECURITY" || \
+  ! grep -Fq "Scan ordinary tracked files and engineering plans for temporary AWS session access keys" "$VISION" || \
+  ! grep -Fq "Extended filename-redacted generic secret scanning to temporary AWS session access keys" "$CHANGES" || \
+  ! grep -Fq "Temporary AWS session access-key identifiers are secret material" "$CREDENTIAL_POLICY"; then
+  printf '%s\n' "Repository guidance must document temporary AWS session access-key scanning." >&2
+  exit 1
+fi
+
+if [ ! -f "$AWS_SESSION_KEY_PLAN" ] || \
+  ! grep -Fq "## Status: Completed" "$AWS_SESSION_KEY_PLAN" || \
+  ! grep -Fq "make check" "$AWS_SESSION_KEY_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$AWS_SESSION_KEY_PLAN" || \
+  ! grep -Fq "does not claim comprehensive" "$AWS_SESSION_KEY_PLAN"; then
+  printf '%s\n' "AWS session access-key scan plan must record completed verification." >&2
   exit 1
 fi
 

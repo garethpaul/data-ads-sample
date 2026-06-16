@@ -1,6 +1,6 @@
 # AWS Session Access Key Readiness Scan
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -38,3 +38,17 @@ material and can be committed in ordinary files or engineering plans.
 
 This is a prefix-specific readiness boundary. It does not claim comprehensive
 secret detection or replace provider-side secret scanning and revocation.
+
+## Verification Results
+
+- A temporary pre-fix probe proved the scanner accepted a synthetic AWS session
+  access-key identifier before implementation.
+- Six isolated hostile mutations were rejected for prefix removal, ordinary and
+  plan fixture removal, value-redaction weakening, guidance removal, and plan
+  status rollback.
+- `sh -n scripts/check-baseline.sh tests/check-baseline.sh` and
+  `git diff --check` passed before the complete repository gate.
+- Repository-root and external-directory `make check` passed the readiness
+  baseline and isolated scanner regressions. The repository truthfully reports
+  that no application runtime tests or build artifact exist while it remains
+  documentation-only.

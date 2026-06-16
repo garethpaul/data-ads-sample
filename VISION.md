@@ -30,6 +30,7 @@ Priority:
   account or customer ID assignments
 - Scan tracked engineering plans for credential and account values
 - Scan ordinary tracked files and engineering plans for fine-grained GitHub token values
+- Scan ordinary tracked files and engineering plans for temporary AWS session access keys
 - Keep orphan runtime source files out until the first implementation includes
   its complete runtime, verification, setup, and security contract
 - Document setup, required accounts, and sample data as soon as code exists

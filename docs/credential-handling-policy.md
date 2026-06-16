@@ -11,6 +11,9 @@ configuration.
 - A local `.env` file copied from `.env.example`; `.env` remains ignored.
 - CI or deployment secrets configured outside git.
 
+Temporary AWS session access-key identifiers are secret material and must stay
+in ignored local or external secret stores even when their lifetime is short.
+
 ## Tracked Placeholders
 
 `.env.example` is tracked only to document names that future code may read:

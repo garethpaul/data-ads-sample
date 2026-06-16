@@ -38,6 +38,8 @@ Helpful reports include:
   as other repository content; plans are not a secret-storage exception.
 - Fine-grained GitHub token values are covered by filename-redacted generic
   secret scanning in ordinary tracked files and engineering plans.
+- Temporary AWS session access-key identifiers are covered by filename-redacted generic
+  secret scanning in ordinary tracked files and engineering plans.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
 - Tracked Git submodules and raw gitlinks are rejected so external repository

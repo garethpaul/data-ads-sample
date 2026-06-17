@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-17
+
+- Extended filename-redacted generic secret scanning to `AIza` Google API key values.
+
 ## 2026-06-16
 
 - Extended filename-redacted generic secret scanning to GitLab personal access token values.

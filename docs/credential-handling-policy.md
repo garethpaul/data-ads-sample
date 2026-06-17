@@ -15,6 +15,8 @@ Temporary AWS session access-key identifiers are secret material and must stay
 in ignored local or external secret stores even when their lifetime is short.
 GitLab personal access tokens are secret material and must stay in ignored
 local or external secret stores.
+Google API keys, including values beginning with `AIza`, are secret material
+and must stay in ignored local or external secret stores.
 
 ## Tracked Placeholders
 

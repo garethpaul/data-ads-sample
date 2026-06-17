@@ -226,6 +226,18 @@ assert_rejected_without_value \
   "Potential secret material detected in:" \
   "docs/plans/mutation-six.md"
 
+google_api_key='AIza'
+google_api_key="${google_api_key}0123456789abcdefghijklmnopqrstuvwxy"
+assert_rejected_without_value \
+  "Google API key" \
+  "$google_api_key" \
+  "Potential secret material detected in:"
+assert_rejected_without_value \
+  "Google API key in plan" \
+  "$google_api_key" \
+  "Potential secret material detected in:" \
+  "docs/plans/mutation-seven.md"
+
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
 assert_rejected_without_value \

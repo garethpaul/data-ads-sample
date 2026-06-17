@@ -29,6 +29,7 @@ PLAN_CREDENTIAL_SCAN_PLAN="$ROOT_DIR/docs/plans/2026-06-15-plan-sensitive-value-
 FINE_GRAINED_GITHUB_PLAN="$ROOT_DIR/docs/plans/2026-06-15-fine-grained-github-value-scan.md"
 AWS_SESSION_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-16-aws-session-access-key-scan.md"
 GITLAB_TOKEN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-gitlab-pat-value-scan.md"
+GOOGLE_API_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-17-google-api-key-value-scan.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -74,6 +75,7 @@ for path in \
   "docs/plans/2026-06-15-fine-grained-github-value-scan.md" \
   "docs/plans/2026-06-16-aws-session-access-key-scan.md" \
   "docs/plans/2026-06-16-gitlab-pat-value-scan.md" \
+  "docs/plans/2026-06-17-google-api-key-value-scan.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -191,7 +193,7 @@ fi
 secret_files=$(rg -l --hidden \
   --glob '!**/.git/**' \
   --glob '!scripts/check-baseline.sh' \
-  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}|glpat-[A-Za-z0-9_-]{20,}' \
+  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}|glpat-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{35}' \
   "$ROOT_DIR" || true)
 if [ -n "$secret_files" ]; then
 	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
@@ -294,6 +296,15 @@ if [ "$(grep -Fc 'glpat-[A-Za-z0-9_-]{20,}' "$ROOT_DIR/scripts/check-baseline.sh
   exit 1
 fi
 
+if [ "$(grep -Fc 'AIza[0-9A-Za-z_-]{35}' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] || \
+  ! grep -Fq "google_api_key='AIza'" "$SCANNER_TEST" || \
+  [ "$(grep -Ec '^[[:space:]]*"Google API key"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  [ "$(grep -Ec '^[[:space:]]*"Google API key in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
+  ! grep -Fq 'docs/plans/mutation-seven.md' "$SCANNER_TEST"; then
+  printf '%s\n' "Readiness scans must cover Google API keys in ordinary files and plans." >&2
+  exit 1
+fi
+
 scanner_rejection_helper=$(awk '
   /^assert_rejected_without_value\(\)/ { capture = 1 }
   capture && /^assert_tracked_symlink_rejected\(\)/ { exit }
@@ -327,6 +338,24 @@ if ! grep -Fq "Generic secret scans cover GitLab personal access token values" "
   ! grep -Fq "Extended filename-redacted generic secret scanning to GitLab personal access token values" "$CHANGES" || \
   ! grep -Fq "GitLab personal access tokens are secret material" "$CREDENTIAL_POLICY"; then
   printf '%s\n' "Repository guidance must document GitLab personal access token scanning." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Generic secret scans cover Google API key values beginning with `AIza`' "$README" || \
+  ! grep -Fq 'Google API key values beginning with `AIza` are covered by filename-redacted' "$SECURITY" || \
+  ! grep -Fq 'Scan ordinary tracked files and engineering plans for `AIza` Google API key values' "$VISION" || \
+  ! grep -Fq 'Extended filename-redacted generic secret scanning to `AIza` Google API key values' "$CHANGES" || \
+  ! grep -Fq 'Google API keys, including values beginning with `AIza`, are secret material' "$CREDENTIAL_POLICY"; then
+  printf '%s\n' "Repository guidance must document Google API key scanning." >&2
+  exit 1
+fi
+
+if [ ! -f "$GOOGLE_API_KEY_PLAN" ] || \
+  ! grep -Fq "## Status: Completed" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "make check" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "hostile mutations were rejected" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "does not claim comprehensive" "$GOOGLE_API_KEY_PLAN"; then
+  printf '%s\n' "Google API key scan plan must record completed verification." >&2
   exit 1
 fi
 

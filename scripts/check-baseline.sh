@@ -354,6 +354,9 @@ if [ ! -f "$GOOGLE_API_KEY_PLAN" ] || \
   ! grep -Fq "## Status: Completed" "$GOOGLE_API_KEY_PLAN" || \
   ! grep -Fq "make check" "$GOOGLE_API_KEY_PLAN" || \
   ! grep -Fq "hostile mutations were rejected" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "187d98a28376b7f92986570b5136c7d38a8e7ac1" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "27663133191" "$GOOGLE_API_KEY_PLAN" || \
+  ! grep -Fq "27663136570" "$GOOGLE_API_KEY_PLAN" || \
   ! grep -Fq "does not claim comprehensive" "$GOOGLE_API_KEY_PLAN"; then
   printf '%s\n' "Google API key scan plan must record completed verification." >&2
   exit 1

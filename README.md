@@ -12,6 +12,12 @@ repository is prepared for a future credential-safe sample with explicit setup,
 safe fixture data, and a local verification command added alongside the first
 implementation.
 
+The readiness guard rejects orphan runtime source files until a complete
+implementation transition adds the chosen runtime manifest, setup, tests,
+credential handling, fixture provenance, and updated repository contracts.
+It also rejects unapproved tracked executable files; only the two readiness
+scanner scripts retain executable mode while the repository is documentation-only.
+
 This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: no dominant source language detected.
 
 ## Repository Contents
@@ -68,24 +74,45 @@ scripts/check-baseline.sh
 
 The current guard verifies that this documentation-only sample has no runtime
 manifest yet, ignores likely local credential and private-export paths, scans
-for obvious token material, rejects tracked symlinks that could escape the
-repository scan boundary, and documents the required follow-up when the first
-real implementation is added. `make test` runs isolated mutation tests for the
-scanner's secret, bearer-token, account-context, tracked-symlink, and
-filename-only redaction behavior. No application runtime tests exist until
+the staged Git index for obvious token material, rejects unmerged entries,
+binary/NUL-containing files, tracked symlinks, and Git submodules that could
+escape the repository scan boundary, and documents the required follow-up when
+the first real implementation is added. `make test` runs isolated mutation
+tests for the scanner's secret, bearer-token, account-context, Git-index,
+checkout, filename, and filename-only redaction behavior. No application runtime tests exist until
 runnable Ads API/GNIP code is added; `make build` continues to run the readiness
 guard.
+The readiness boundary rejects tracked symlinks and Git submodules before
+content scanning.
 The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
 script exits with an explicit prerequisite message when it is missing.
 Credential and account-context findings report filenames without echoing
 matched values, so a failed local or hosted check does not copy secrets into
 terminal or CI logs.
+The commit boundary is authoritative: staged content is scanned even when the
+working tree contains a different value, while unstaged-only content is not
+treated as part of the prospective commit. Checkout validation ties
+`persist-credentials: false` to the pinned checkout step rather than accepting
+the text elsewhere in workflow YAML.
+Tracked engineering plans are scanned for credential and account values under
+the same filename-only redaction boundary as other repository content.
+Generic secret scans include modern fine-grained GitHub token values while
+keeping diagnostics limited to affected filenames.
+Generic secret scans cover temporary AWS session access keys under the same
+filename-only diagnostic boundary.
+Generic secret scans cover GitLab personal access token values under the same
+filename-only diagnostic boundary.
+Generic secret scans cover Google API key values beginning with `AIza` under
+the same filename-only diagnostic boundary.
+These focused patterns are a readiness backstop, not comprehensive secret
+detection. They do not decode arbitrary encodings, archives, or transformed
+values and cannot validate whether a matching credential is active.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only
-repository access, and a bounded Ubuntu 24.04 runtime. CI installs ripgrep as
-the sole readiness tool without adding a project package manager or runtime
-dependency.
+repository access, a credential-free checkout, and a bounded Ubuntu 24.04
+runtime. CI installs ripgrep as the sole readiness tool without adding a
+project package manager or runtime dependency.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -134,6 +161,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the isolated scanner behavior and redaction test contract.
 - See `docs/plans/2026-06-12-tracked-symlink-guard.md` for the rule that keeps
   readiness scans inside the tracked repository tree.
+- See `docs/plans/2026-06-13-tracked-gitlink-guard.md` for the rule that keeps
+  external submodule content outside this documentation-only repository.
 - If a runtime manifest such as `package.json`, `requirements.txt`, or
   `pyproject.toml` is added, update `scripts/check-baseline.sh` with the real
   install and verification commands in the same change.

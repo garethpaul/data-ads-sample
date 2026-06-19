@@ -1,7 +1,44 @@
 # Changes
 
+## 2026-06-19
+
+- Moved readiness content and path checks to the staged Git index, with
+  fail-closed metadata/content errors and escaped unusual filenames.
+- Rejected unmerged and NUL-containing index entries, prevented working-tree
+  edits from hiding staged credentials, and reduced embedded-key false
+  positives with explicit token boundaries.
+- Scoped the credential-free checkout contract to the pinned checkout step and
+  added hostile regressions for index divergence, binary content, malformed
+  index state, Unicode boundaries, newline paths, and Git command failures.
+
+## 2026-06-17
+
+- Extended filename-redacted generic secret scanning to `AIza` Google API key values.
+
+## 2026-06-16
+
+- Extended filename-redacted generic secret scanning to GitLab personal access token values.
+- Extended filename-redacted generic secret scanning to temporary AWS session access keys.
+
+## 2026-06-15
+
+- Extended credential and account-value scans to tracked engineering plans and
+  added filename-redacted plan fixture regressions.
+- Extended filename-redacted generic secret scanning to fine-grained GitHub token values.
+
+## 2026-06-13
+
+- Rejected unapproved tracked executable files while preserving the two
+  readiness scanner entry points.
+- Rejected tracked runtime source files while the repository remains
+  documentation-only, with filename-redacted Python and JavaScript regressions.
+- Rejected tracked Git submodules and raw gitlinks before readiness content
+  scans, with a network-free redaction regression for indexed object IDs.
+
 ## 2026-06-12
 
+- Stopped the hosted readiness checkout from persisting its credential and
+  added an exact contract for the sole workflow and checkout step.
 - Added isolated mutation tests for generic secret, Ads/GNIP bearer-token, and
   populated account-context scanner findings.
 - Asserted that scanner failures report affected filenames without reproducing

@@ -28,14 +28,39 @@ Helpful reports include:
 - The repository scan did not identify production authentication, payment, or secret-management code. Treat the project as public sample code unless future changes add sensitive surfaces.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - GitHub Actions runs the readiness, credential, and fixture-safety baseline
-  with a commit-pinned checkout action, read-only repository access, and a
-  bounded runtime.
+  with a commit-pinned checkout action, read-only repository access, a
+  credential-free checkout, and a bounded runtime.
 - Credential placeholders are tracked in `.env.example`; real values must stay
   out of git and follow `docs/credential-handling-policy.md`.
 - Readiness scans report only affected filenames, never matched credential,
   account ID, or customer ID values, to avoid copying secrets into CI logs.
+- Readiness content checks scan the staged Git index instead of mutable
+  working-tree copies, reject unmerged and NUL-containing entries, and escape
+  unusual filenames before diagnostics.
+- The checkout credential policy is structurally scoped to the pinned checkout
+  step; matching text in another step does not satisfy the boundary.
+- Tracked engineering plans receive the same credential and account-value scans
+  as other repository content; plans are not a secret-storage exception.
+- Fine-grained GitHub token values are covered by filename-redacted generic
+  secret scanning in ordinary tracked files and engineering plans.
+- Temporary AWS session access-key identifiers are covered by filename-redacted generic
+  secret scanning in ordinary tracked files and engineering plans.
+- GitLab personal access token values are covered by filename-redacted generic
+  secret scanning in ordinary tracked files and engineering plans.
+- Google API key values beginning with `AIza` are covered by filename-redacted
+  generic secret scanning in ordinary tracked files and engineering plans.
+- Pattern matching is intentionally limited and does not decode archives,
+  arbitrary encodings, split or transformed values, or prove credential
+  validity. GitHub's provider scanning remains an additional defense.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
+- Tracked Git submodules and raw gitlinks are rejected so external repository
+  content cannot sit outside the readiness scanner's reviewed file boundary.
+- Tracked application source files are rejected while the repository remains
+  documentation-only; the first implementation must add its runtime, locked
+  dependencies, tests, setup, and credential boundary together.
+- Tracked executable files are allowlisted to the two readiness scanner scripts
+  so extensionless runtime entry points cannot bypass the documentation-only boundary.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so
   only synthetic or publishable sample data is tracked.
 - Future fixture changes must complete the fixture provenance checklist before

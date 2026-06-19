@@ -11,6 +11,13 @@ configuration.
 - A local `.env` file copied from `.env.example`; `.env` remains ignored.
 - CI or deployment secrets configured outside git.
 
+Temporary AWS session access-key identifiers are secret material and must stay
+in ignored local or external secret stores even when their lifetime is short.
+GitLab personal access tokens are secret material and must stay in ignored
+local or external secret stores.
+Google API keys, including values beginning with `AIza`, are secret material
+and must stay in ignored local or external secret stores.
+
 ## Tracked Placeholders
 
 `.env.example` is tracked only to document names that future code may read:
@@ -35,6 +42,15 @@ cookies, account IDs, customer IDs, or raw private exports. Error output should
 name the missing variable or setup step without echoing configured values.
 Repository readiness scans follow the same rule: findings identify affected
 files without printing the matched credential or account-context value.
+The scanner evaluates staged Git-index content because that is the prospective
+commit boundary. It rejects unmerged and NUL-containing entries rather than
+silently relying on a mutable working-tree copy or text-decoding heuristic.
+
+The scanner is a focused readiness backstop, not comprehensive secret
+detection. It does not decode archives, base64 or other transformed values,
+arbitrary non-NUL encodings, split credentials, or provider-specific custom
+prefixes, and it does not validate whether a matching credential is active.
+Use provider-side secret scanning and rotate any value that may have escaped.
 
 ## Verification Updates
 

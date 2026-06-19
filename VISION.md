@@ -17,15 +17,26 @@ The current focus is:
 
 Priority:
 
+- Keep tracked executable modes limited to approved readiness scripts
 - Establish basic project direction before adding code
 - Keep root verification gates aligned with the documentation-only baseline
 - Keep readiness tool prerequisites explicit before the source guard runs
 - Keep the credential and fixture-safety baseline running in GitHub Actions
+  without persisting the checkout credential
 - Keep any future Ads API and GNIP credentials out of git
 - Keep the credential placeholder contract explicit before code exists
 - Keep account context placeholders empty until runnable code defines them
 - Keep readiness failures redacted to affected filenames and reject populated
   account or customer ID assignments
+- Scan the staged Git index, reject ambiguous or binary index states, and keep
+  checkout credential policy attached to the checkout step
+- Scan tracked engineering plans for credential and account values
+- Scan ordinary tracked files and engineering plans for fine-grained GitHub token values
+- Scan ordinary tracked files and engineering plans for temporary AWS session access keys
+- Scan ordinary tracked files and engineering plans for GitLab personal access token values
+- Scan ordinary tracked files and engineering plans for `AIza` Google API key values
+- Keep orphan runtime source files out until the first implementation includes
+  its complete runtime, verification, setup, and security contract
 - Document setup, required accounts, and sample data as soon as code exists
 - Prefer a small runnable example over a broad client wrapper
 
@@ -46,6 +57,8 @@ Contribution rules:
   explicit safe fixtures.
 - Keep tracked symlinks out of the repository so credential and fixture checks
   remain bounded to reviewed files.
+- Keep tracked Git submodules and gitlinks out of the documentation-only
+  repository so external content cannot bypass readiness review.
 - Require safe fixture provenance before committing sample Ads/GNIP data.
 - Keep fixture provenance records with the fixture change by using
   `docs/fixture-provenance-template.md` or equivalent plan fields.

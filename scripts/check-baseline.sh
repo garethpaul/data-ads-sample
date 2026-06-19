@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 README="$ROOT_DIR/README.md"
 VISION="$ROOT_DIR/VISION.md"
 SECURITY="$ROOT_DIR/SECURITY.md"
@@ -30,6 +30,7 @@ FINE_GRAINED_GITHUB_PLAN="$ROOT_DIR/docs/plans/2026-06-15-fine-grained-github-va
 AWS_SESSION_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-16-aws-session-access-key-scan.md"
 GITLAB_TOKEN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-gitlab-pat-value-scan.md"
 GOOGLE_API_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-17-google-api-key-value-scan.md"
+INDEX_HARDENING_PLAN="$ROOT_DIR/docs/plans/2026-06-19-git-index-readiness-hardening.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 SCANNER_TEST="$ROOT_DIR/tests/check-baseline.sh"
 
@@ -39,6 +40,131 @@ require_file() {
     printf '%s\n' "Required file is missing: $path" >&2
     exit 1
   fi
+}
+
+escape_index_paths() {
+  rule=$1
+  index_file=$(mktemp "${TMPDIR:-/tmp}/data-ads-index.XXXXXX")
+  if ! git -C "$ROOT_DIR" ls-files -z --stage >"$index_file"; then
+    rm -f "$index_file"
+    printf '%s\n' "Git index metadata scan failed safely." >&2
+    return 1
+  fi
+  status=0
+  INDEX_PATH_RULE=$rule perl -0ne '
+      s/\0\z//;
+      die "Malformed Git index record\n"
+        unless /\A([0-9]+) ([0-9a-f]+) ([0-3])\t(.*)\z/s;
+      ($mode, $stage, $path) = ($1, $3, $4);
+      $rule = $ENV{"INDEX_PATH_RULE"};
+      $matches =
+        ($rule eq "unmerged" && $stage ne "0") ||
+        ($rule eq "symlink" && $mode eq "120000") ||
+        ($rule eq "gitlink" && $mode eq "160000") ||
+        ($rule eq "executable" && $mode eq "100755" &&
+          $path ne "scripts/check-baseline.sh" &&
+          $path ne "tests/check-baseline.sh") ||
+        ($rule eq "runtime" && $path =~ /\.(?:cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs)\z/i) ||
+        ($rule eq "manifest" && $path =~ m{(?:\A|/)(?:package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)\z}) ||
+        ($rule eq "sensitive" &&
+          $path !~ m{(?:\A|/)\.env\.example\z} &&
+          $path ne "docs/credential-handling-policy.md" &&
+          $path ne "docs/plans/2026-06-09-credential-placeholder-policy.md" &&
+          $path ne "docs/plans/2026-06-12-checkout-credential-boundary.md" &&
+          $path =~ m{(?:\A|/)(?:\.env(?:\.|\z)|.*\.(?:pem|key)\z|.*(?:secret|credential|token).*|secrets/|data/(?:private|raw|cache|exports)/|.*\.(?:sqlite|db)\z)}i);
+      next unless $matches;
+      $path =~ s/\\/\\\\/g;
+      $path =~ s/([^[:print:]])/sprintf("\\x{%02X}", ord($1))/ge;
+      print "$path\n";
+    ' "$index_file" || status=$?
+  rm -f "$index_file"
+  return "$status"
+}
+
+git_grep_index_files() {
+  pattern=$1
+  shift
+  output_file=$(mktemp "${TMPDIR:-/tmp}/data-ads-grep.XXXXXX")
+  escaped_file=$(mktemp "${TMPDIR:-/tmp}/data-ads-grep-paths.XXXXXX")
+  status=0
+  git -C "$ROOT_DIR" grep --cached -a -l -z "$@" -e "$pattern" -- . \
+    ':(exclude)scripts/check-baseline.sh' >"$output_file" || status=$?
+  if [ "$status" -gt 1 ]; then
+    rm -f "$output_file" "$escaped_file"
+    printf '%s\n' "Git index content scan failed safely." >&2
+    return "$status"
+  fi
+  if ! perl -0ne '
+      s/\0\z//;
+      next if $_ eq "";
+      s/\\/\\\\/g;
+      s/([^[:print:]])/sprintf("\\x{%02X}", ord($1))/ge;
+      print "$_\n";
+    ' "$output_file" >"$escaped_file"; then
+    rm -f "$output_file" "$escaped_file"
+    printf '%s\n' "Git index path rendering failed safely." >&2
+    return 1
+  fi
+  cat "$escaped_file"
+  rm -f "$output_file" "$escaped_file"
+}
+
+checkout_credentials_are_scoped() {
+  awk -v checkout='actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' '
+    function indentation(line, copy) {
+      copy = line
+      sub(/[^ ].*$/, "", copy)
+      return length(copy)
+    }
+    function finish_checkout() {
+      if (!in_checkout) return
+      if (with_count != 1 || credential_count != 1 || credential_false != 1) invalid = 1
+      in_checkout = 0
+    }
+    {
+      sub(/\r$/, "")
+      if (index($0, "\t") != 0) invalid = 1
+      indent = indentation($0)
+      if (in_scalar) {
+        if ($0 ~ /^[ ]*$/ || indent > scalar_indent) next
+        in_scalar = 0
+      }
+      if ($0 ~ /^[ ]*[A-Za-z0-9_-]+:[ ]*[|>][-+0-9]*([ ]*#.*)?$/) {
+        scalar_indent = indent
+        in_scalar = 1
+        next
+      }
+      if (in_checkout && $0 !~ /^[ ]*$/ && indent <= step_indent) finish_checkout()
+      if ($0 ~ "^[ ]*uses:[ ]*" checkout "([ ]*#.*)?$") {
+        finish_checkout()
+        checkout_count++
+        in_checkout = 1
+        key_indent = indent
+        step_indent = indent - 2
+        with_count = 0
+        credential_count = 0
+        credential_false = 0
+        in_with = 0
+        next
+      }
+      if (!in_checkout) next
+      if (indent == key_indent && $0 ~ /^[ ]*with:[ ]*$/) {
+        with_count++
+        in_with = 1
+        next
+      }
+      if (indent <= key_indent) in_with = 0
+      if (in_with && indent == key_indent + 2 &&
+          $0 ~ /^[ ]*persist-credentials:[ ]*/) {
+        credential_count++
+        if ($0 ~ /^[ ]*persist-credentials:[ ]*false([ ]*#.*)?$/) credential_false++
+      }
+    }
+    END {
+      finish_checkout()
+      exit !(checkout_count == 1 && invalid == 0)
+    }
+  ' "$CI_WORKFLOW"
 }
 
 for path in \
@@ -76,16 +202,15 @@ for path in \
   "docs/plans/2026-06-16-aws-session-access-key-scan.md" \
   "docs/plans/2026-06-16-gitlab-pat-value-scan.md" \
   "docs/plans/2026-06-17-google-api-key-value-scan.md" \
+  "docs/plans/2026-06-19-git-index-readiness-hardening.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
 done
 
 workflow_count=$(find "$ROOT_DIR/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')
-checkout_count=$(grep -Ec '^[[:space:]]*uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' "$CI_WORKFLOW" || true)
-credential_boundary_count=$(grep -Ec '^[[:space:]]*persist-credentials:[[:space:]]*false([[:space:]]|$)' "$CI_WORKFLOW" || true)
-if [ "$workflow_count" -ne 1 ] || [ "$checkout_count" -ne 1 ] || [ "$credential_boundary_count" -ne 1 ]; then
-  printf '%s\n' "GitHub Actions must keep one workflow with one pinned, credential-free checkout." >&2
+if [ "$workflow_count" -ne 1 ] || ! checkout_credentials_are_scoped; then
+  printf '%s\n' "GitHub Actions checkout must set persist-credentials to false in its own with mapping." >&2
   exit 1
 fi
 
@@ -128,9 +253,9 @@ if ! command -v rg >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ "$(grep -Ec '^[a-z_]+_files=\$\(rg -l --hidden' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 3 ] ||
-  grep -Eq '^[a-z_]+_files=\$\(rg -n --hidden' "$ROOT_DIR/scripts/check-baseline.sh"; then
-  printf '%s\n' "Readiness content scans must report filenames instead of matched values." >&2
+if [ "$(grep -Ec '^[a-z_]+_files=\$\(git_grep_index_files' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 4 ] ||
+  grep -Eq 'git -C "\$ROOT_DIR" grep .* -n' "$ROOT_DIR/scripts/check-baseline.sh"; then
+  printf '%s\n' "Readiness content scans must use the Git index and report filenames instead of matched values." >&2
   exit 1
 fi
 
@@ -141,33 +266,31 @@ for ignored in ".env" ".env.*" ".envrc" "!.env.example" "*.local" "*.pem" "*.key
   fi
 done
 
-tracked_sensitive=$(git -C "$ROOT_DIR" ls-files |
-  grep -Ev '(^|/)\.env\.example$|^docs/credential-handling-policy\.md$|^docs/plans/2026-06-09-credential-placeholder-policy\.md$|^docs/plans/2026-06-12-checkout-credential-boundary\.md$' |
-  grep -Ei '(^|/)(\.env(\.|$)|.*\.(pem|key)|.*(secret|credential|token).*|secrets/|data/(private|raw|cache|exports)/|.*\.(sqlite|db)$)' || true)
+unmerged_entries=$(escape_index_paths unmerged)
+if [ -n "$unmerged_entries" ]; then
+  printf '%s\n%s\n' "Unmerged Git index entries are not allowed:" "$unmerged_entries" >&2
+  exit 1
+fi
+
+tracked_sensitive=$(escape_index_paths sensitive)
 if [ -n "$tracked_sensitive" ]; then
   printf '%s\n%s\n' "Potential credential or private-data files are tracked:" "$tracked_sensitive" >&2
   exit 1
 fi
 
-tracked_symlinks=$(git -C "$ROOT_DIR" ls-files -s |
-  awk '$1 == "120000" { print substr($0, index($0, "\t") + 1) }')
+tracked_symlinks=$(escape_index_paths symlink)
 if [ -n "$tracked_symlinks" ]; then
   printf '%s\n%s\n' "Tracked symbolic links are not allowed:" "$tracked_symlinks" >&2
   exit 1
 fi
 
-tracked_gitlinks=$(git -C "$ROOT_DIR" ls-files -s |
-  awk '$1 == "160000" { print substr($0, index($0, "\t") + 1) }')
+tracked_gitlinks=$(escape_index_paths gitlink)
 if [ -n "$tracked_gitlinks" ]; then
   printf '%s\n%s\n' "Tracked Git submodules are not allowed:" "$tracked_gitlinks" >&2
   exit 1
 fi
 
-tracked_executables=$(git -C "$ROOT_DIR" ls-files -s |
-  awk '$1 == "100755" {
-    path = substr($0, index($0, "\t") + 1)
-    if (path != "scripts/check-baseline.sh" && path != "tests/check-baseline.sh") print path
-  }')
+tracked_executables=$(escape_index_paths executable)
 if [ -n "$tracked_executables" ]; then
   printf '%s\n%s\n' \
     "Tracked executable files require an explicit readiness allowlist:" \
@@ -175,14 +298,14 @@ if [ -n "$tracked_executables" ]; then
   exit 1
 fi
 
-if [ "$(grep -Fc '$1 == "100755"' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
-  [ "$(grep -Fc 'if (path != "scripts/check-baseline.sh" && path != "tests/check-baseline.sh") print path' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ]; then
+if [ "$(grep -Fc '$rule eq "executable" && $mode eq "100755"' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
+  [ "$(grep -Fc '$path ne "scripts/check-baseline.sh" &&' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
+  [ "$(grep -Fc '$path ne "tests/check-baseline.sh")' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ]; then
   printf '%s\n' "Tracked executable guard must keep the exact two-script allowlist." >&2
   exit 1
 fi
 
-tracked_runtime_sources=$(git -C "$ROOT_DIR" ls-files |
-  grep -Ei '\.(cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs)$' || true)
+tracked_runtime_sources=$(escape_index_paths runtime)
 if [ -n "$tracked_runtime_sources" ]; then
   printf '%s\n%s\n' \
     "Tracked runtime source files require a complete implementation transition:" \
@@ -190,37 +313,37 @@ if [ -n "$tracked_runtime_sources" ]; then
   exit 1
 fi
 
-secret_files=$(rg -l --hidden \
-  --glob '!**/.git/**' \
-  --glob '!scripts/check-baseline.sh' \
-  '(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}|glpat-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{35}' \
-  "$ROOT_DIR" || true)
+binary_files=$(git_grep_index_files '\x00' -P)
+if [ -n "$binary_files" ]; then
+  printf '%s\n%s\n' "Tracked binary or NUL-containing files are not allowed:" "$binary_files" >&2
+  exit 1
+fi
+
+secret_files=$(git_grep_index_files \
+  '(^|[^A-Za-z0-9])(AKIA|ASIA)[0-9A-Z]{16}([^A-Za-z0-9]|$)|(^|[^A-Za-z0-9_])(gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,})([^A-Za-z0-9_]|$)|(^|[^A-Za-z0-9_-])glpat-[A-Za-z0-9_-]{20,}([^A-Za-z0-9_-]|$)|(^|[^A-Za-z0-9_-])AIza[0-9A-Za-z_-]{35}([^A-Za-z0-9_-]|$)|-----BEGIN ([A-Z ]+)?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+' \
+  -E)
 if [ -n "$secret_files" ]; then
 	printf '%s\n%s\n' "Potential secret material detected in:" "$secret_files" >&2
 	exit 1
 fi
 
-api_secret_files=$(rg -l --hidden -i \
-  --glob '!**/.git/**' \
-  --glob '!scripts/check-baseline.sh' \
+api_secret_files=$(git_grep_index_files \
   'bearer[[:space:]]+[A-Za-z0-9._-]{20,}|(twitter|gnip|ads)[A-Za-z0-9_ -]{0,32}(secret|token|key)[A-Za-z0-9_ -]{0,16}[:=][[:space:]]*[A-Za-z0-9_./+=-]{20,}' \
-  "$ROOT_DIR" || true)
+  -E -i)
 if [ -n "$api_secret_files" ]; then
 	printf '%s\n%s\n' "Potential Ads API, GNIP, or bearer token material detected in:" "$api_secret_files" >&2
 	exit 1
 fi
 
-account_context_files=$(rg -l --hidden -i \
-	--glob '!**/.git/**' \
-	--glob '!scripts/check-baseline.sh' \
-	"(ads[_ -]?)?(account|customer)[_ -]?id[\"']?[[:space:]]*[:=][[:space:]]*[\"']?[0-9]{5,}" \
-	"$ROOT_DIR" || true)
+account_context_files=$(git_grep_index_files \
+  "(ads[_ -]?)?(account|customer)[_ -]?id[\"']?[[:space:]]*[:=][[:space:]]*[\"']?[0-9]{5,}" \
+  -E -i)
 if [ -n "$account_context_files" ]; then
 	printf '%s\n%s\n' "Potential populated Ads account context detected in:" "$account_context_files" >&2
 	exit 1
 fi
 
-runtime_manifests=$(git -C "$ROOT_DIR" ls-files | grep -E '(^|/)(package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)$' || true)
+runtime_manifests=$(escape_index_paths manifest)
 if [ -n "$runtime_manifests" ]; then
   printf '%s\n%s\n' "Runtime manifests were added; update README, plan, and this guard for the real sample:" "$runtime_manifests" >&2
   exit 1
@@ -244,6 +367,13 @@ if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFIL
 fi
 
 if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_index_content_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_index_content_accepted" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_binary_index_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_unmerged_index_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_newline_runtime_path_rejected" "$SCANNER_TEST" ||
+  ! grep -Fq "assert_checkout_boundary_scoped" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_git_index_failure_rejected ' "$SCANNER_TEST")" -ne 2 ] ||
   ! grep -Fq "assert_tracked_symlink_rejected" "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_gitlink_rejected" "$SCANNER_TEST" ||
   ! grep -Fq "assert_unapproved_executable_rejected" "$SCANNER_TEST" ||
@@ -259,6 +389,20 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
   exit 1
 fi
+
+for index_contract in \
+  'git -C "$ROOT_DIR" ls-files -z --stage' \
+  'git -C "$ROOT_DIR" grep --cached -a -l -z' \
+  'Git index metadata scan failed safely.' \
+  'Git index content scan failed safely.' \
+  'Tracked binary or NUL-containing files are not allowed:' \
+  'Unmerged Git index entries are not allowed:' \
+  'checkout_credentials_are_scoped'; do
+  if ! grep -Fq "$index_contract" "$ROOT_DIR/scripts/check-baseline.sh"; then
+    printf '%s\n' "Readiness scanner must preserve Git-index hardening: $index_contract" >&2
+    exit 1
+  fi
+done
 
 if [ "$(grep -Fc -- "--glob '!docs/plans/**'" "$ROOT_DIR/scripts/check-baseline.sh")" -ne 1 ] || \
   ! grep -Fq 'fixture_path=${4:-mutation.txt}' "$SCANNER_TEST" || \
@@ -359,6 +503,15 @@ if [ ! -f "$GOOGLE_API_KEY_PLAN" ] || \
   ! grep -Fq "27663136570" "$GOOGLE_API_KEY_PLAN" || \
   ! grep -Fq "does not claim comprehensive" "$GOOGLE_API_KEY_PLAN"; then
   printf '%s\n' "Google API key scan plan must record completed verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$INDEX_HARDENING_PLAN" ] || \
+  ! grep -Fq "## Status: Completed" "$INDEX_HARDENING_PLAN" || \
+  ! grep -Fq "make check" "$INDEX_HARDENING_PLAN" || \
+  ! grep -Fq "staged Git index" "$INDEX_HARDENING_PLAN" || \
+  ! grep -Fq "does not claim comprehensive" "$INDEX_HARDENING_PLAN"; then
+  printf '%s\n' "Git-index readiness hardening plan must record completed verification and limitations." >&2
   exit 1
 fi
 

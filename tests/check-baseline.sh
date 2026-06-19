@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+REAL_GIT=$(command -v git)
 TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/data-ads-baseline-tests.XXXXXX")
 trap 'rm -rf "$TMP_ROOT"' EXIT HUP INT TERM
 
@@ -56,6 +57,225 @@ assert_rejected_without_value() {
   case $output in
     *"$fixture_content"*)
       printf '%s\n' "$label: scanner output exposed the matched value" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_index_content_rejected() {
+  label=$1
+  fixture_content=$2
+  expected_message=$3
+  fixture_path=${4:-mutation.txt}
+  working_tree_content=${5:-safe working tree content}
+
+  prepare_case
+  mkdir -p "$CASE_DIR/$(dirname -- "$fixture_path")"
+  printf '%s\n' "$fixture_content" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
+  printf '%s\n' "$working_tree_content" >"$CASE_DIR/$fixture_path"
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "$label: expected staged-content rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"$expected_message"*"$fixture_path"*) ;;
+    *)
+      printf '%s\n%s\n' "$label: expected diagnostic and fixture filename" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$fixture_content"*|*"$working_tree_content"*)
+      printf '%s\n' "$label: scanner output exposed file content" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_index_content_accepted() {
+  label=$1
+  staged_content=$2
+  working_tree_content=${3:-$staged_content}
+
+  prepare_case
+  printf '%s\n' "$staged_content" >"$CASE_DIR/mutation.txt"
+  git -C "$CASE_DIR" add mutation.txt
+  printf '%s\n' "$working_tree_content" >"$CASE_DIR/mutation.txt"
+
+  if ! output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n%s\n' "$label: expected scanner acceptance" "$output" >&2
+    exit 1
+  fi
+}
+
+assert_binary_index_rejected() {
+  prepare_case
+  fixture_path='encoded-payload.bin'
+  fixture_secret='ghp_'
+  fixture_secret="${fixture_secret}012345678901234567890123456789"
+  printf '\000%s\000' "$fixture_secret" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
+  printf '%s\n' 'safe working tree content' >"$CASE_DIR/$fixture_path"
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "binary index content: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked binary or NUL-containing files are not allowed:"*"$fixture_path"*) ;;
+    *)
+      printf '%s\n%s\n' "binary index content: expected redacted binary diagnostic" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$fixture_secret"*)
+      printf '%s\n' "binary index content: scanner output exposed matched content" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_unmerged_index_rejected() {
+  prepare_case
+  fixture_path='conflicted-input.txt'
+  base_object=$(printf '%s' 'base' | git -C "$CASE_DIR" hash-object -w --stdin)
+  ours_object=$(printf '%s' 'ours' | git -C "$CASE_DIR" hash-object -w --stdin)
+  theirs_object=$(printf '%s' 'theirs' | git -C "$CASE_DIR" hash-object -w --stdin)
+  git -C "$CASE_DIR" update-index --force-remove "$fixture_path"
+  printf '100644 %s 1\t%s\n100644 %s 2\t%s\n100644 %s 3\t%s\n' \
+    "$base_object" "$fixture_path" \
+    "$ours_object" "$fixture_path" \
+    "$theirs_object" "$fixture_path" |
+    git -C "$CASE_DIR" update-index --index-info
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "unmerged index: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Unmerged Git index entries are not allowed:"*"$fixture_path"*) ;;
+    *)
+      printf '%s\n%s\n' "unmerged index: expected controlled diagnostic" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$base_object"*|*"$ours_object"*|*"$theirs_object"*)
+      printf '%s\n' "unmerged index: scanner output exposed object IDs" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_newline_runtime_path_rejected() {
+  prepare_case
+  fixture_path=$(printf 'sample\nclient.py')
+  printf '%s\n' "print('private account workflow')" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "newline runtime path: expected scanner rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked runtime source files require a complete implementation transition:"*'sample\x{0A}client.py'*) ;;
+    *)
+      printf '%s\n%s\n' "newline runtime path: expected escaped filename diagnostic" "$output" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_checkout_boundary_scoped() {
+  prepare_case
+  perl -0pi -e 's/persist-credentials: false/persist-credentials: true/' \
+    "$CASE_DIR/.github/workflows/check.yml"
+  cat >>"$CASE_DIR/.github/workflows/check.yml" <<'EOF'
+
+      - name: Credential boundary decoy
+        if: ${{ false }}
+        run: |
+          persist-credentials: false
+EOF
+  git -C "$CASE_DIR" add .github/workflows/check.yml
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "checkout boundary: expected structural rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"GitHub Actions checkout must set persist-credentials to false in its own with mapping."*) ;;
+    *)
+      printf '%s\n%s\n' "checkout boundary: expected controlled diagnostic" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  prepare_case
+  perl -0pi -e \
+    's#actions/checkout\@df4cb1c069e1874edd31b4311f1884172cec0e10#actions/checkout\@v6#' \
+    "$CASE_DIR/.github/workflows/check.yml"
+  cat >>"$CASE_DIR/.github/workflows/check.yml" <<'EOF'
+
+      - name: Checkout contract decoy
+        run: |
+          uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+          with:
+            persist-credentials: false
+EOF
+  git -C "$CASE_DIR" add .github/workflows/check.yml
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "checkout boundary: expected block-scalar decoy rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"GitHub Actions checkout must set persist-credentials to false in its own with mapping."*) ;;
+    *)
+      printf '%s\n%s\n' "checkout boundary: expected block-scalar diagnostic" "$output" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_git_index_failure_rejected() {
+  label=$1
+  failure_mode=$2
+  expected_message=$3
+
+  prepare_case
+  mkdir -p "$CASE_DIR/failing-bin"
+  cat >"$CASE_DIR/failing-bin/git" <<EOF
+#!/usr/bin/env sh
+case "\$*" in
+  *"$failure_mode"*) exit 2 ;;
+esac
+exec "$REAL_GIT" "\$@"
+EOF
+  chmod 755 "$CASE_DIR/failing-bin/git"
+
+  if output=$(PATH="$CASE_DIR/failing-bin:$PATH" \
+      "$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "$label: expected fail-closed Git diagnostic" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"$expected_message"*) ;;
+    *)
+      printf '%s\n%s\n' "$label: expected controlled Git failure diagnostic" "$output" >&2
       exit 1
       ;;
   esac
@@ -214,6 +434,13 @@ assert_rejected_without_value \
   "Potential secret material detected in:" \
   "docs/plans/mutation-five.md"
 
+aws_static_key='AKIA'
+aws_static_key="${aws_static_key}0123456789ABCDEF"
+assert_rejected_without_value \
+  "AWS static access key" \
+  "$aws_static_key" \
+  "Potential secret material detected in:"
+
 gitlab_token='glpat-'
 gitlab_token="${gitlab_token}abcdefghijklmnopqrstuvwxyz"
 assert_rejected_without_value \
@@ -237,6 +464,22 @@ assert_rejected_without_value \
   "$google_api_key" \
   "Potential secret material detected in:" \
   "docs/plans/mutation-seven.md"
+
+assert_index_content_rejected \
+  "staged GitHub token hidden by working tree" \
+  "$generic_secret" \
+  "Potential secret material detected in:"
+assert_index_content_rejected \
+  "Unicode-delimited staged GitHub token" \
+  "é${generic_secret}é" \
+  "Potential secret material detected in:"
+assert_index_content_accepted \
+  "unstaged GitHub token is outside the commit boundary" \
+  "safe staged content" \
+  "$generic_secret"
+assert_index_content_accepted \
+  "embedded Google-like identifier is not a standalone key" \
+  "prefix${google_api_key}suffix"
 
 bearer_token='bearer '
 bearer_token="${bearer_token}abcdefghijklmnopqrstuvwxyz123456"
@@ -267,5 +510,17 @@ assert_tracked_gitlink_rejected
 assert_unapproved_executable_rejected
 assert_tracked_runtime_source_rejected "sample/client.py" "print('private account workflow')"
 assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
+assert_binary_index_rejected
+assert_unmerged_index_rejected
+assert_newline_runtime_path_rejected
+assert_checkout_boundary_scoped
+assert_git_index_failure_rejected \
+  "Git index metadata failure" \
+  "ls-files -z --stage" \
+  "Git index metadata scan failed safely."
+assert_git_index_failure_rejected \
+  "Git index content failure" \
+  "grep --cached" \
+  "Git index content scan failed safely."
 
 printf '%s\n' "Readiness scanner regression tests passed."

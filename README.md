@@ -74,18 +74,26 @@ scripts/check-baseline.sh
 
 The current guard verifies that this documentation-only sample has no runtime
 manifest yet, ignores likely local credential and private-export paths, scans
-for obvious token material, rejects tracked symlinks and Git submodules that
-could escape the repository scan boundary, and documents the required follow-up when the first
-real implementation is added. `make test` runs isolated mutation tests for the
-scanner's secret, bearer-token, account-context, tracked-symlink, gitlink, and
-filename-only redaction behavior. No application runtime tests exist until
+the staged Git index for obvious token material, rejects unmerged entries,
+binary/NUL-containing files, tracked symlinks, and Git submodules that could
+escape the repository scan boundary, and documents the required follow-up when
+the first real implementation is added. `make test` runs isolated mutation
+tests for the scanner's secret, bearer-token, account-context, Git-index,
+checkout, filename, and filename-only redaction behavior. No application runtime tests exist until
 runnable Ads API/GNIP code is added; `make build` continues to run the readiness
 guard.
+The readiness boundary rejects tracked symlinks and Git submodules before
+content scanning.
 The readiness guard requires ripgrep (`rg`) for secret and manifest scans; the
 script exits with an explicit prerequisite message when it is missing.
 Credential and account-context findings report filenames without echoing
 matched values, so a failed local or hosted check does not copy secrets into
 terminal or CI logs.
+The commit boundary is authoritative: staged content is scanned even when the
+working tree contains a different value, while unstaged-only content is not
+treated as part of the prospective commit. Checkout validation ties
+`persist-credentials: false` to the pinned checkout step rather than accepting
+the text elsewhere in workflow YAML.
 Tracked engineering plans are scanned for credential and account values under
 the same filename-only redaction boundary as other repository content.
 Generic secret scans include modern fine-grained GitHub token values while
@@ -96,6 +104,9 @@ Generic secret scans cover GitLab personal access token values under the same
 filename-only diagnostic boundary.
 Generic secret scans cover Google API key values beginning with `AIza` under
 the same filename-only diagnostic boundary.
+These focused patterns are a readiness backstop, not comprehensive secret
+detection. They do not decode arbitrary encodings, archives, or transformed
+values and cannot validate whether a matching credential is active.
 
 GitHub Actions runs `make check` for pushes, pull requests, and manual
 dispatches. The workflow uses a commit-pinned checkout action, read-only

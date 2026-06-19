@@ -1,5 +1,16 @@
 # Changes
 
+## 2026-06-19
+
+- Moved readiness content and path checks to the staged Git index, with
+  fail-closed metadata/content errors and escaped unusual filenames.
+- Rejected unmerged and NUL-containing index entries, prevented working-tree
+  edits from hiding staged credentials, and reduced embedded-key false
+  positives with explicit token boundaries.
+- Scoped the credential-free checkout contract to the pinned checkout step and
+  added hostile regressions for index divergence, binary content, malformed
+  index state, Unicode boundaries, newline paths, and Git command failures.
+
 ## 2026-06-17
 
 - Extended filename-redacted generic secret scanning to `AIza` Google API key values.

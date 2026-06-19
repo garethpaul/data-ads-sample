@@ -34,6 +34,11 @@ Helpful reports include:
   out of git and follow `docs/credential-handling-policy.md`.
 - Readiness scans report only affected filenames, never matched credential,
   account ID, or customer ID values, to avoid copying secrets into CI logs.
+- Readiness content checks scan the staged Git index instead of mutable
+  working-tree copies, reject unmerged and NUL-containing entries, and escape
+  unusual filenames before diagnostics.
+- The checkout credential policy is structurally scoped to the pinned checkout
+  step; matching text in another step does not satisfy the boundary.
 - Tracked engineering plans receive the same credential and account-value scans
   as other repository content; plans are not a secret-storage exception.
 - Fine-grained GitHub token values are covered by filename-redacted generic
@@ -44,6 +49,9 @@ Helpful reports include:
   secret scanning in ordinary tracked files and engineering plans.
 - Google API key values beginning with `AIza` are covered by filename-redacted
   generic secret scanning in ordinary tracked files and engineering plans.
+- Pattern matching is intentionally limited and does not decode archives,
+  arbitrary encodings, split or transformed values, or prove credential
+  validity. GitHub's provider scanning remains an additional defense.
 - Tracked symbolic links are rejected so readiness scans cannot resolve or
   bypass content through machine-local paths outside the repository.
 - Tracked Git submodules and raw gitlinks are rejected so external repository

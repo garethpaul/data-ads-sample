@@ -28,6 +28,8 @@ Priority:
 - Keep account context placeholders empty until runnable code defines them
 - Keep readiness failures redacted to affected filenames and reject populated
   account or customer ID assignments
+- Scan the staged Git index, reject ambiguous or binary index states, and keep
+  checkout credential policy attached to the checkout step
 - Scan tracked engineering plans for credential and account values
 - Scan ordinary tracked files and engineering plans for fine-grained GitHub token values
 - Scan ordinary tracked files and engineering plans for temporary AWS session access keys

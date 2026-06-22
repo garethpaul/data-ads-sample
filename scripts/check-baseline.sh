@@ -56,6 +56,15 @@ escape_index_paths() {
       die "Malformed Git index record\n"
         unless /\A([0-9]+) ([0-9a-f]+) ([0-3])\t(.*)\z/s;
       ($mode, $stage, $path) = ($1, $3, $4);
+      $classification_path = $path;
+      if (utf8::decode($classification_path)) {
+        $classification_path =~ s/\s+\z//;
+      } else {
+        $classification_path = $path;
+        $classification_path =~ s/[ \t\r\n\f\x0B]+\z//;
+      }
+      $runtime_path = $classification_path;
+      $runtime_path =~ tr/A-Z/a-z/;
       $rule = $ENV{"INDEX_PATH_RULE"};
       $matches =
         ($rule eq "unmerged" && $stage ne "0") ||
@@ -64,7 +73,10 @@ escape_index_paths() {
         ($rule eq "executable" && $mode eq "100755" &&
           $path ne "scripts/check-baseline.sh" &&
           $path ne "tests/check-baseline.sh") ||
-        ($rule eq "runtime" && $path =~ /\.(?:cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs)\z/i) ||
+        ($rule eq "runtime" &&
+          $path ne "scripts/check-baseline.sh" &&
+          $path ne "tests/check-baseline.sh" &&
+          $runtime_path =~ /\.(?:cjs|mjs|js|jsx|ts|tsx|py|rb|php|java|kt|kts|swift|go|rs|cs|sh|bash|zsh|ksh)\z/) ||
         ($rule eq "manifest" && $path =~ m{(?:\A|/)(?:package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)\z}) ||
         ($rule eq "sensitive" &&
           $path !~ m{(?:\A|/)\.env\.example\z} &&
@@ -299,9 +311,9 @@ if [ -n "$tracked_executables" ]; then
 fi
 
 if [ "$(grep -Fc '$rule eq "executable" && $mode eq "100755"' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
-  [ "$(grep -Fc '$path ne "scripts/check-baseline.sh" &&' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] ||
-  [ "$(grep -Fc '$path ne "tests/check-baseline.sh")' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ]; then
-  printf '%s\n' "Tracked executable guard must keep the exact two-script allowlist." >&2
+  [ "$(grep -Fc '$path ne "scripts/check-baseline.sh" &&' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 3 ] ||
+  [ "$(grep -Fc '$path ne "tests/check-baseline.sh"' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 3 ]; then
+  printf '%s\n' "Tracked executable and runtime guards must keep the exact two-script allowlist." >&2
   exit 1
 fi
 
@@ -381,6 +393,12 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   ! grep -Fq '*"$fixture_content"*|*"$fixture_object"*)' "$SCANNER_TEST" ||
   ! grep -Fq "assert_tracked_runtime_source_rejected" "$SCANNER_TEST" ||
   [ "$(grep -c '^assert_tracked_runtime_source_rejected ' "$SCANNER_TEST")" -ne 2 ] ||
+  ! grep -Fq "assert_shell_runtime_sources_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_shell_runtime_sources_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
+  ! grep -Fq "assert_invalid_utf8_shell_path_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_invalid_utf8_shell_path_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
+  ! grep -Fq "assert_unicode_confusable_extensions_accepted" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_unicode_confusable_extensions_accepted$' "$SCANNER_TEST")" -ne 1 ] ||
   [ "$(grep -c '^assert_tracked_gitlink_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
   ! grep -Fq "scanner output exposed the object ID" "$SCANNER_TEST" ||
   ! grep -Fq "Potential secret material detected in:" "$SCANNER_TEST" ||

@@ -368,11 +368,17 @@ assert_unapproved_executable_rejected() {
 assert_tracked_runtime_source_rejected() {
   fixture_path=$1
   fixture_content=$2
+  expected_diagnostic_path=${3:-$fixture_path}
 
   prepare_case
-  mkdir -p "$CASE_DIR/$(dirname -- "$fixture_path")"
+  fixture_dir=${fixture_path%/*}
+  if [ "$fixture_dir" = "$fixture_path" ]; then
+    fixture_dir=.
+  fi
+  mkdir -p "$CASE_DIR/$fixture_dir"
   printf '%s\n' "$fixture_content" >"$CASE_DIR/$fixture_path"
   git -C "$CASE_DIR" add "$fixture_path"
+  fixture_object=$(git -C "$CASE_DIR" rev-parse ":$fixture_path")
 
   if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
     printf '%s\n' "$fixture_path: expected runtime source rejection" >&2
@@ -380,7 +386,7 @@ assert_tracked_runtime_source_rejected() {
   fi
 
   case $output in
-    *"Tracked runtime source files require a complete implementation transition:"*"$fixture_path"*) ;;
+    *"Tracked runtime source files require a complete implementation transition:"*"$expected_diagnostic_path"*) ;;
     *)
       printf '%s\n%s\n' "$fixture_path: expected diagnostic and fixture filename" "$output" >&2
       exit 1
@@ -388,11 +394,264 @@ assert_tracked_runtime_source_rejected() {
   esac
 
   case $output in
-    *"$fixture_content"*)
-      printf '%s\n' "$fixture_path: scanner output exposed source content" >&2
+    *"$fixture_content"*|*"$fixture_object"*)
+      printf '%s\n' "$fixture_path: scanner output exposed source content or object ID" >&2
       exit 1
       ;;
   esac
+}
+
+assert_tracked_path_accepted() {
+  fixture_path=$1
+  fixture_content=$2
+
+  prepare_case
+  fixture_dir=${fixture_path%/*}
+  if [ "$fixture_dir" = "$fixture_path" ]; then
+    fixture_dir=.
+  fi
+  mkdir -p "$CASE_DIR/$fixture_dir"
+  printf '%s\n' "$fixture_content" >"$CASE_DIR/$fixture_path"
+  git -C "$CASE_DIR" add "$fixture_path"
+
+  if ! output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n%s\n' "$fixture_path: expected scanner acceptance" "$output" >&2
+    exit 1
+  fi
+}
+
+assert_exact_shell_allowlist_accepted() {
+  prepare_case
+
+  for allowed_path in scripts/check-baseline.sh tests/check-baseline.sh; do
+    mode=$(git -C "$CASE_DIR" ls-files --stage "$allowed_path" | awk '{print $1}')
+    if [ "$mode" != 100755 ]; then
+      printf '%s\n' "$allowed_path: expected executable readiness script" >&2
+      exit 1
+    fi
+  done
+
+  if ! output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n%s\n' "exact shell allowlist: expected scanner acceptance" "$output" >&2
+    exit 1
+  fi
+}
+
+assert_invalid_utf8_shell_path_rejected() {
+  prepare_case
+  fixture_content='benign invalid-UTF8 shell sample'
+
+  CASE_DIR_FOR_PERL=$CASE_DIR FIXTURE_CONTENT=$fixture_content perl -e '
+    use strict;
+    use warnings;
+    my $root = $ENV{"CASE_DIR_FOR_PERL"};
+    my $path = "sample/client-\xFF.sh \t";
+    my $content_path = "$root/.invalid-fixture-content";
+    open my $content, ">", $content_path or die "content open failed: $!\n";
+    print {$content} "$ENV{FIXTURE_CONTENT}\n";
+    close $content or die "content close failed: $!\n";
+    open my $hash, "-|", "git", "-C", $root, "hash-object", "-w", $content_path
+      or die "hash-object pipe failed: $!\n";
+    my $object = <$hash>;
+    close $hash or die "hash-object failed\n";
+    chomp $object;
+    unlink $content_path or die "content unlink failed: $!\n";
+    open my $index, "|-", "git", "-C", $root, "update-index", "-z", "--index-info"
+      or die "update-index pipe failed: $!\n";
+    print {$index} "100644 $object\t$path\0";
+    close $index or die "update-index failed\n";
+  '
+
+  if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+    printf '%s\n' "invalid UTF-8 shell path: expected runtime source rejection" >&2
+    exit 1
+  fi
+
+  case $output in
+    *"Tracked runtime source files require a complete implementation transition:"*"sample/client-\\x{FF}.sh \\x{09}"*) ;;
+    *)
+      printf '%s\n%s\n' "invalid UTF-8 shell path: expected exact escaped filename" "$output" >&2
+      exit 1
+      ;;
+  esac
+
+  case $output in
+    *"$fixture_content"*)
+      printf '%s\n' "invalid UTF-8 shell path: scanner output exposed source content" >&2
+      exit 1
+      ;;
+  esac
+}
+
+assert_invalid_utf8_non_ascii_whitespace_accepted() {
+  prepare_case
+
+  for extension in sh bash zsh ksh; do
+    CASE_DIR_FOR_PERL=$CASE_DIR EXTENSION=$extension perl -e '
+      use strict;
+      use warnings;
+      my $root = $ENV{"CASE_DIR_FOR_PERL"};
+      my $path = "sample/client.$ENV{EXTENSION}\x85";
+      my $content_path = "$root/.invalid-accepted-content";
+      open my $content, ">", $content_path or die "content open failed: $!\n";
+      print {$content} "documentation-only invalid-byte filename\n";
+      close $content or die "content close failed: $!\n";
+      open my $hash, "-|", "git", "-C", $root, "hash-object", "-w", $content_path
+        or die "hash-object pipe failed: $!\n";
+      my $object = <$hash>;
+      close $hash or die "hash-object failed\n";
+      chomp $object;
+      unlink $content_path or die "content unlink failed: $!\n";
+      open my $index, "|-", "git", "-C", $root, "update-index", "-z", "--index-info"
+        or die "update-index pipe failed: $!\n";
+      print {$index} "100644 $object\t$path\0";
+      close $index or die "update-index failed\n";
+    '
+
+    if ! output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+      printf '%s\n%s\n' "invalid byte 0x85 after .$extension: expected scanner acceptance" "$output" >&2
+      exit 1
+    fi
+
+    prepare_case
+  done
+}
+
+assert_invalid_utf8_ascii_vt_rejected() {
+  prepare_case
+
+  for extension in sh bash zsh ksh; do
+    CASE_DIR_FOR_PERL=$CASE_DIR EXTENSION=$extension perl -e '
+      use strict;
+      use warnings;
+      my $root = $ENV{"CASE_DIR_FOR_PERL"};
+      my $path = "sample/client.$ENV{EXTENSION}\x0B";
+      my $content_path = "$root/.invalid-vt-content";
+      open my $content, ">", $content_path or die "content open failed: $!\n";
+      print {$content} "runtime-like invalid-byte filename\n";
+      close $content or die "content close failed: $!\n";
+      open my $hash, "-|", "git", "-C", $root, "hash-object", "-w", $content_path
+        or die "hash-object pipe failed: $!\n";
+      my $object = <$hash>;
+      close $hash or die "hash-object failed\n";
+      chomp $object;
+      unlink $content_path or die "content unlink failed: $!\n";
+      open my $index, "|-", "git", "-C", $root, "update-index", "-z", "--index-info"
+        or die "update-index pipe failed: $!\n";
+      print {$index} "100644 $object\t$path\0";
+      close $index or die "update-index failed\n";
+    '
+
+    if output=$("$CASE_DIR/scripts/check-baseline.sh" 2>&1); then
+      printf '%s\n' "invalid ASCII VT after .$extension: expected runtime rejection" >&2
+      exit 1
+    fi
+    case $output in
+      *"Tracked runtime source files require a complete implementation transition:"*"sample/client.$extension\\x{0B}"*) ;;
+      *)
+        printf '%s\n%s\n' "invalid ASCII VT after .$extension: expected exact escaped filename" "$output" >&2
+        exit 1
+        ;;
+    esac
+
+    prepare_case
+  done
+}
+
+assert_shell_runtime_sources_rejected() {
+  tab=$(printf '\t')
+  carriage_return=$(printf '\r')
+  form_feed=$(printf '\f')
+  vertical_tab=$(printf '\v')
+  newline='
+'
+
+  for extension in sh bash zsh ksh; do
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension" \
+      "benign $extension sample"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension   " \
+      "benign repeated-space $extension sample"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension$tab$tab" \
+      "benign repeated-tab $extension sample" \
+      "sample/client.$extension\\x{09}\\x{09}"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension$carriage_return$carriage_return" \
+      "benign repeated-CR $extension sample" \
+      "sample/client.$extension\\x{0D}\\x{0D}"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension$newline" \
+      "benign trailing-LF $extension sample" \
+      "sample/client.$extension\\x{0A}"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension$form_feed" \
+      "benign trailing-FF $extension sample" \
+      "sample/client.$extension\\x{0C}"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension$vertical_tab" \
+      "benign trailing-VT $extension sample" \
+      "sample/client.$extension\\x{0B}"
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension $tab$carriage_return$newline$form_feed$vertical_tab  " \
+      "benign mixed-whitespace $extension sample" \
+      "sample/client.$extension \\x{09}\\x{0D}\\x{0A}\\x{0C}\\x{0B}  "
+  done
+
+  assert_tracked_runtime_source_rejected \
+    " sample/client.sh" \
+    "benign leading-whitespace sample"
+  assert_tracked_runtime_source_rejected \
+    "sample/client shell.sh" \
+    "benign embedded-whitespace sample"
+  assert_tracked_runtime_source_rejected \
+    "sample/.client.sh " \
+    "benign dotfile sample"
+  assert_tracked_runtime_source_rejected \
+    "sample/client.txt.sh " \
+    "benign double-suffix sample"
+  assert_tracked_runtime_source_rejected \
+    "sample/client.SH " \
+    "benign uppercase sample"
+  assert_tracked_runtime_source_rejected \
+    "nested/scripts/check-baseline.sh" \
+    "benign nested alias sample"
+  assert_tracked_runtime_source_rejected \
+    "scripts/check-baseline.sh.bash" \
+    "benign suffix alias sample"
+  assert_tracked_runtime_source_rejected \
+    "scripts/check-baseline.sh " \
+    "benign allowlist-space alias sample"
+  assert_tracked_runtime_source_rejected \
+    "tests/check-baseline.sh$tab$carriage_return" \
+    "benign allowlist-control alias sample" \
+    "tests/check-baseline.sh\\x{09}\\x{0D}"
+  assert_tracked_runtime_source_rejected \
+    "scripts /check-baseline.sh" \
+    "benign directory-whitespace alias sample"
+
+  assert_tracked_path_accepted \
+    "sample/client.sh.txt   " \
+    "benign non-shell final suffix"
+}
+
+assert_unicode_confusable_extensions_accepted() {
+  tab=$(printf '\t')
+  carriage_return=$(printf '\r')
+
+  assert_tracked_path_accepted \
+    "sample/client.ſh" \
+    "documentation-only long-s filename"
+  assert_tracked_path_accepted \
+    "sample/client.ſh $tab$carriage_return" \
+    "documentation-only long-s whitespace filename"
+  assert_tracked_path_accepted \
+    "sample/client.Ksh" \
+    "documentation-only Kelvin filename"
+  assert_tracked_path_accepted \
+    "sample/client.Ksh   " \
+    "documentation-only Kelvin whitespace filename"
 }
 
 prepare_case
@@ -510,6 +769,12 @@ assert_tracked_gitlink_rejected
 assert_unapproved_executable_rejected
 assert_tracked_runtime_source_rejected "sample/client.py" "print('private account workflow')"
 assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
+assert_shell_runtime_sources_rejected
+assert_invalid_utf8_shell_path_rejected
+assert_invalid_utf8_non_ascii_whitespace_accepted
+assert_invalid_utf8_ascii_vt_rejected
+assert_unicode_confusable_extensions_accepted
+assert_exact_shell_allowlist_accepted
 assert_binary_index_rejected
 assert_unmerged_index_rejected
 assert_newline_runtime_path_rejected

@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-25
+
+- Revalidated exact shell runtime-path classification, including invalid UTF-8
+  and trailing ASCII whitespace cases, with the full readiness suite and an
+  independent Codex review.
+
 ## 2026-06-19
 
 - Moved readiness content and path checks to the staged Git index, with

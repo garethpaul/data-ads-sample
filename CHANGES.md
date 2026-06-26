@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-26
+
+- Rejected orphan Perl runtime files (`.pl` and `.pm`) while the repository
+  remains documentation-only, with filename-redacted script and module
+  regressions and a durable documentation contract.
+- Repository and external-directory `make check`, shell syntax, diff checks,
+  and two isolated extension-removal mutations passed.
+
 ## 2026-06-25
 
 - Closed the stale roadmap item for adding local verification: `make check`

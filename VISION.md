@@ -38,6 +38,7 @@ Priority:
 - Keep orphan runtime source files out until the first implementation includes
   its complete runtime, verification, setup, and security contract
 - Keep Perl source paths (`.pl` and `.pm`) inside the same no-orphan-runtime boundary
+- Keep native source and header paths for C, C++, and Objective-C inside the same boundary
 - Document setup, required accounts, and sample data as soon as code exists
 - Prefer a small runnable example over a broad client wrapper
 

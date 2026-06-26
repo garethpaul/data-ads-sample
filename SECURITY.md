@@ -61,6 +61,8 @@ Helpful reports include:
   dependencies, tests, setup, and credential boundary together.
 - Perl runtime files (`.pl` and `.pm`) are included in that staged-index source
   boundary and receive filename-only rejection diagnostics.
+- Native source and header files for C, C++, and Objective-C are included in
+  the same staged-index boundary and filename-only diagnostics.
 - Tracked executable files are allowlisted to the two readiness scanner scripts
   so extensionless runtime entry points cannot bypass the documentation-only boundary.
 - Future Ads API or GNIP fixtures must follow `docs/data-fixture-policy.md` so

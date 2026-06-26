@@ -2,6 +2,10 @@
 
 ## 2026-06-26
 
+- Rejected orphan native runtime files for C, C++, and Objective-C, including
+  common source and header suffixes, with filename-redacted regressions.
+- Repository and external-directory `make check`, shell syntax, diff checks,
+  and isolated `.c`, `.hpp`, and `.mm` classifier-removal mutations passed.
 - Rejected orphan Perl runtime files (`.pl` and `.pm`) while the repository
   remains documentation-only, with filename-redacted script and module
   regressions and a durable documentation contract.

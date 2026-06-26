@@ -25,4 +25,7 @@ diagnostics, trailing-whitespace handling, and all content scans.
   readiness scanner regression suite and documentation-only build contract.
 - Two isolated hostile mutations removing `.pl` or `.pm` classification were
   rejected, and shell syntax plus `git diff --check` passed.
-- Hosted verification and exact-head review remain required before merge.
+- Exact-head readiness runs `28250272153` and `28250274757` passed in 39 and
+  41 seconds; CodeQL run `28250273410` passed Actions analysis.
+- Codex review was attempted and blocked by repeated OpenAI API HTTP 401
+  failures; immutable exact-head manual review found no actionable findings.

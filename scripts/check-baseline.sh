@@ -978,4 +978,20 @@ if ! grep -Fq "status: completed" "$SCANNER_REDACTION_PLAN" ||
   exit 1
 fi
 
+if grep -Fq 'Add a minimal local verification command' "$ROOT_DIR/VISION.md"; then
+  printf '%s\n' 'VISION.md must not retain the completed local verification gate as future work.' >&2
+  exit 1
+fi
+
+for local_verification_contract in \
+  'Keep the existing `make check` readiness command as the minimal local verification gate' \
+  'Status: Completed' \
+  'repository-root and external-directory `make check`'; do
+  if ! grep -Fq "$local_verification_contract" \
+    "$ROOT_DIR/docs/plans/2026-06-25-local-verification-roadmap-closure.md"; then
+    printf '%s\n' "Local verification closure must keep contract: $local_verification_contract" >&2
+    exit 1
+  fi
+done
+
 printf '%s\n' "Data Ads Sample readiness baseline checks passed."

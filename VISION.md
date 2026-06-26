@@ -44,7 +44,8 @@ Next priorities:
 
 - Keep README, setup notes, and verification commands aligned with the current repository state
 - Define the sample language, runtime, and supported API flow
-- Add a minimal local verification command
+- Keep the existing `make check` readiness command as the minimal local
+  verification gate until a runtime implementation adds its own tests
 - Include fixture data that is safe to publish
 - Require fixture provenance before future sample data is committed
 - Use the fixture provenance template for future sample data reviews

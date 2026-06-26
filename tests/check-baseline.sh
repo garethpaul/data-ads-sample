@@ -401,6 +401,14 @@ assert_tracked_runtime_source_rejected() {
   esac
 }
 
+assert_native_runtime_sources_rejected() {
+  for extension in c cc cpp cxx h hh hpp hxx m mm; do
+    assert_tracked_runtime_source_rejected \
+      "sample/client.$extension" \
+      "native Ads client fixture"
+  done
+}
+
 assert_tracked_path_accepted() {
   fixture_path=$1
   fixture_content=$2
@@ -771,6 +779,7 @@ assert_tracked_runtime_source_rejected "sample/client.py" "print('private accoun
 assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
 assert_tracked_runtime_source_rejected "sample/client.pl" "print qq(private account workflow\\n);"
 assert_tracked_runtime_source_rejected "sample/AdsClient.pm" "package AdsClient; 1;"
+assert_native_runtime_sources_rejected
 assert_shell_runtime_sources_rejected
 assert_invalid_utf8_shell_path_rejected
 assert_invalid_utf8_non_ascii_whitespace_accepted

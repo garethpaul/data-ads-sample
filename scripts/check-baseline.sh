@@ -76,7 +76,7 @@ escape_index_paths() {
         ($rule eq "runtime" &&
           $path ne "scripts/check-baseline.sh" &&
           $path ne "tests/check-baseline.sh" &&
-          $runtime_path =~ /\.(?:cjs|mjs|js|jsx|ts|tsx|py|rb|pl|pm|php|java|kt|kts|swift|go|rs|cs|sh|bash|zsh|ksh)\z/) ||
+          $runtime_path =~ /\.(?:c|cc|cpp|cxx|h|hh|hpp|hxx|m|mm|cjs|mjs|js|jsx|ts|tsx|py|rb|pl|pm|php|java|kt|kts|swift|go|rs|cs|sh|bash|zsh|ksh)\z/) ||
         ($rule eq "manifest" && $path =~ m{(?:\A|/)(?:package\.json|package-lock\.json|requirements.*\.txt|pyproject\.toml|setup\.py|build\.gradle|pom\.xml|go\.mod|Cargo\.toml)\z}) ||
         ($rule eq "sensitive" &&
           $path !~ m{(?:\A|/)\.env\.example\z} &&
@@ -215,6 +215,7 @@ for path in \
   "docs/plans/2026-06-16-gitlab-pat-value-scan.md" \
   "docs/plans/2026-06-17-google-api-key-value-scan.md" \
   "docs/plans/2026-06-19-git-index-readiness-hardening.md" \
+  "docs/plans/2026-06-26-native-runtime-source-guard.md" \
   "scripts/check-baseline.sh" \
   "tests/check-baseline.sh"; do
   require_file "$path"
@@ -395,6 +396,8 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   [ "$(grep -c '^assert_tracked_runtime_source_rejected ' "$SCANNER_TEST")" -ne 4 ] ||
   ! grep -Fq 'assert_tracked_runtime_source_rejected "sample/client.pl"' "$SCANNER_TEST" ||
   ! grep -Fq 'assert_tracked_runtime_source_rejected "sample/AdsClient.pm"' "$SCANNER_TEST" ||
+  ! grep -Fq "assert_native_runtime_sources_rejected" "$SCANNER_TEST" ||
+  [ "$(grep -c '^assert_native_runtime_sources_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
   ! grep -Fq "assert_shell_runtime_sources_rejected" "$SCANNER_TEST" ||
   [ "$(grep -c '^assert_shell_runtime_sources_rejected$' "$SCANNER_TEST")" -ne 1 ] ||
   ! grep -Fq "assert_invalid_utf8_shell_path_rejected" "$SCANNER_TEST" ||
@@ -409,6 +412,28 @@ if ! grep -Fq "assert_rejected_without_value" "$SCANNER_TEST" ||
   printf '%s\n' "Scanner regression tests must cover rejection and redacted diagnostics." >&2
   exit 1
 fi
+
+if ! grep -Fq 'c|cc|cpp|cxx|h|hh|hpp|hxx|m|mm|cjs' "$ROOT_DIR/scripts/check-baseline.sh" || \
+  ! grep -Fq 'C, C++, and Objective-C source and header files' "$README" || \
+  ! grep -Fq 'Native source and header files' "$SECURITY" || \
+  ! grep -Fq 'native source and header paths' "$VISION" || \
+  ! grep -Fq 'Rejected orphan native runtime files' "$CHANGES"; then
+  printf '%s\n' "The documentation-only boundary must reject native source and header files." >&2
+  exit 1
+fi
+
+for native_runtime_plan_contract in \
+  "Status: Completed" \
+  "sample/client.c" \
+  "Ten native source and header fixtures" \
+  '`.c`, `.hpp`, and `.mm`' \
+  "No application runtime"; do
+  if ! grep -Fq "$native_runtime_plan_contract" \
+    "$ROOT_DIR/docs/plans/2026-06-26-native-runtime-source-guard.md"; then
+    printf '%s\n' "Native runtime source guard plan must retain completed verification evidence." >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq 'py|rb|pl|pm|php' "$ROOT_DIR/scripts/check-baseline.sh" || \
   ! grep -Fq 'Perl scripts and modules' "$README" || \

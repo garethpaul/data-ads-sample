@@ -17,6 +17,8 @@ implementation transition adds the chosen runtime manifest, setup, tests,
 credential handling, fixture provenance, and updated repository contracts.
 This includes Perl scripts and modules (`.pl` and `.pm`) as well as the other
 common application source extensions enforced by the staged-index scanner.
+It also includes C, C++, and Objective-C source and header files so native
+implementation cannot arrive without the required runtime transition.
 It also rejects unapproved tracked executable files; only the two readiness
 scanner scripts retain executable mode while the repository is documentation-only.
 

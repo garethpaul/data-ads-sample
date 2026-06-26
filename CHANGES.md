@@ -2,6 +2,9 @@
 
 ## 2026-06-25
 
+- Closed the stale roadmap item for adding local verification: `make check`
+  already runs lint/readiness scanning, the isolated hostile regression suite,
+  and the documentation-only build contract from any working directory.
 - Revalidated exact shell runtime-path classification, including invalid UTF-8
   and trailing ASCII whitespace cases, with the full readiness suite and an
   independent Codex review.

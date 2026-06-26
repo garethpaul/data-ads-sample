@@ -769,6 +769,8 @@ assert_tracked_gitlink_rejected
 assert_unapproved_executable_rejected
 assert_tracked_runtime_source_rejected "sample/client.py" "print('private account workflow')"
 assert_tracked_runtime_source_rejected "sample/client.js" "throw new Error('private token workflow')"
+assert_tracked_runtime_source_rejected "sample/client.pl" "print qq(private account workflow\\n);"
+assert_tracked_runtime_source_rejected "sample/AdsClient.pm" "package AdsClient; 1;"
 assert_shell_runtime_sources_rejected
 assert_invalid_utf8_shell_path_rejected
 assert_invalid_utf8_non_ascii_whitespace_accepted

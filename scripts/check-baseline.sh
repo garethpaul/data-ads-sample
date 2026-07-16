@@ -467,7 +467,13 @@ if [ "$(grep -Fc -- "--glob '!docs/plans/**'" "$ROOT_DIR/scripts/check-baseline.
   exit 1
 fi
 
-if ! grep -Fq 'github_pat_[A-Za-z0-9_]{30,}' "$ROOT_DIR/scripts/check-baseline.sh" || \
+# Assert the COUNT, not mere presence. `grep -Fq '<pattern>' check-baseline.sh`
+# is satisfied by the literal on this very assertion line, so it can never fail:
+# deleting the real detector from the scan pattern above left `make lint` green
+# with the scanner blind. Requiring exactly 2 -- the live detector plus this
+# assertion -- makes removal of either one fail, which is the form the
+# executable-bit and rg-glob checks in this file already use correctly.
+if [ "$(grep -Fc 'github_pat_[A-Za-z0-9_]{30,}' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] || \
   ! grep -Fq "fine_grained_token='github_pat_'" "$SCANNER_TEST" || \
   [ "$(grep -Ec '^[[:space:]]*"fine-grained GitHub token"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
   [ "$(grep -Ec '^[[:space:]]*"fine-grained GitHub token in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
@@ -476,7 +482,9 @@ if ! grep -Fq 'github_pat_[A-Za-z0-9_]{30,}' "$ROOT_DIR/scripts/check-baseline.s
   exit 1
 fi
 
-if ! grep -Fq '(AKIA|ASIA)[0-9A-Z]{16}' "$ROOT_DIR/scripts/check-baseline.sh" || \
+# Same tautology as the fine-grained-token check above: assert the count so the
+# live detector cannot be removed while this assertion satisfies itself.
+if [ "$(grep -Fc '(AKIA|ASIA)[0-9A-Z]{16}' "$ROOT_DIR/scripts/check-baseline.sh")" -ne 2 ] || \
   ! grep -Fq "aws_session_key='ASIA'" "$SCANNER_TEST" || \
   [ "$(grep -Ec '^[[:space:]]*"AWS session access key"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
   [ "$(grep -Ec '^[[:space:]]*"AWS session access key in plan"[[:space:]]*\\$' "$SCANNER_TEST")" -ne 1 ] || \
